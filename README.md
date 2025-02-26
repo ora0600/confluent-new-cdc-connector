@@ -1,16 +1,16 @@
 # CDC from Oracle 19c with Confluent Xstream Connector and Sink to Oracle DB 23ai Sink (ATG)
 
 This Demo will show very easily how our new Oracle CDC Connector based on the Oracle XStream Concept will work. We will Synch Order data from Oracle DB 19c to Confluent Cloud.
-As additional hightlight we will replicate the raw data into Oracle DB 23ai with integrated Sink connector from Confuent Cloud to Oracle 23ai.
+As additional hightlight we will replicate the raw data into Oracle DB 23ai with integrated Sink connector from Confluent Cloud to Oracle 23ai.
 
 ![Demo Architecture](images/Demo_architecture.png)
 
 > [!IMPORTANT]
-> The new Oracle CDC Connector from Confluent based on the XStream API is not published yet. The GA rollout is coming soon. Please contact your Confluent Account Team if you would like to know more.
+> The new Oracle CDC Connector from Confluent based on the Oracle XStream API is not published yet. The GA rollout is coming soon. Please contact your Confluent Account Team if you would like to know more.
 
-This simple Demo will added into my [CDC Workshop](https://github.com/ora0600/confluent-cdc-workshop) after new Connector will be GA.
+This simple Demo will be added into my [CDC Workshop](https://github.com/ora0600/confluent-cdc-workshop) after new Connector will be GA.
 
-The demo deployment is based on terraform for the most components (Confluet Cloud Cluster, Oracle 19c, Oracle 23ai) only the new Connector will run on local desktop with docker including, connect cluster, Grafana/Prometheus.
+The demo deployment is based on terraform for the most components (Confluent Cloud Cluster, Oracle 19c, Oracle 23ai) only the new Connector will run on local desktop with docker including, connect cluster, Grafana/Prometheus.
 
 ## Deploy demo
 
@@ -25,11 +25,12 @@ cd confluent-new-cdc-connector
 4 Simple steps to run this demo:
 1. Deploy the Confluent Cloud cluster first with terraform. terraform must be installed on desktop, and you need a Confluent Cloud Account and a Key.
 2. Deploy the 19c database in AWS with terraform. You need an aws account, a key, and a ssh key.
-3. Deploy the new Connector with Grafana and Prometheus with Docker on your local desktop. You need docker to be installed-
-4. Deploy the 23ai database in AWS with terraform. You need an aws account, a key, and a ssh key.
+3. Deploy the new Connector with Grafana and Prometheus with Docker on your local desktop. You need docker to be installed
+4. (optional) Minitor XStream Server
+5. Deploy the 23ai database in AWS with terraform. You need an aws account, a key, and a ssh key.
 
 
-Fill-out the accounts property file before you start;
+Fill-out the .accounts property file before you start;
 
 ```bash
 # Confluent Cloud 
@@ -69,7 +70,7 @@ Confluent Cloud should be created. The Output shows what was created.
 
 ### 2. Deploy the Oracle 19c Database
 
-This database is created with a preconfigured image. This will later to a free Oracle21c XE container.
+This database is created with a preconfigured image. This will later changed to a free Oracle21c XE container.
 
 run terraform:
 
@@ -90,7 +91,7 @@ A03_DBSSH = "SSH  Access: ssh -i ~/keys/cmawsdemoxstream.pem ec2-user@X.X.X.X "
 A04_DBOracleAccess = "sqlplus sys/confluent123@orcl as sysdba or sqlplus sys/confluent123@ORCLPDB1 as sysdba or sqlplus ordermgmt/kafka@ORCLPDB1 sqlplus c##ggadmin/confluent123@ORCLPDB1 Port:1521  HOST:X.X.X.X"
 ``` 
 
-First we need to add some setups for new CDC Connector to database. The main privileges are already set. :
+First we need to add some configds for new CDC Connector in the  database. The main privileges are already set:
 
 ```bash
 # ssh into Oracle19c compute instances, it takes a while till Oracle DB is up and running
@@ -161,22 +162,23 @@ We need
   - Java Version 17 or higher `java -version`
   - I created a folder `confluent-hub-components` and download there the New CDC Connector.
   - in the folder `confluent-hub-components/<new-connector>/lib/` I copied the files `ojdbc8.jar` and `xstreams.jar` which I download from the instant client for Linux [Download](https://download.oracle.com/otn_software/linux/instantclient/2360000/instantclient-basic-linux.x64-23.6.0.24.10.zip)
-  - in the Dockerfile I included in the connect container the Oracle Instant client and set the LD_LIBRARY_PATH env variable (see Dockerfile)
-  - If you run a different system then me (MacBook M3, MacOS) you need to find an instant client for other Hardware.
-  - We did change the the Dockerfile and installed Oracle Instant Client and set LD_LIBRARY_PATH in the docker container. That's why in `docker-compose-cdc-ccloud_new.yml` your will see only `build: .` and this mean, that the container will build based on the `Dockerfile`.
+  - in the Dockerfile I included the connect container, the Oracle Instant client and set the LD_LIBRARY_PATH env variable (see Dockerfile)
+  - If you run a different system then me (MacBook M3, MacOS) you need to find an instant client for your Hardware.
+  - We did change the Dockerfile and installed Oracle Instant Client and set LD_LIBRARY_PATH in the docker container. That's why in `docker-compose-cdc-ccloud_new.yml` your will see only `build: .` and this mean, that the container will be build based on the `Dockerfile`.
 
 Start the connect cluster: 
 
 ```bash
 cd ../cdc-connector
-# start environment, for Confluent colleques: Shutdown VPN, otherwise the instant client can not be loaded
+# Start docker Desktop
+# start environment, for Confluent colleques: Shutdown VPN, otherwise the Oracle instant client can not be loaded
 docker-compose -f docker-compose-cdc-ccloud_new.yml up -d
 docker-compose -f docker-compose-cdc-ccloud_new.yml ps
 ```
 
 This will run on your Desktop, the docker-compose includes connect cluster, Grafana and Prometheus. 
 See [Grafana Dashboard](http://localhost:3000/login) login with admin/admin, and check [Prometheus Targets](http://localhost:9090/targets)
-You can in Prometheus if metrics from our connector are published. Open Prometheus UI (http://prometheus:9090/graph).
+You can see in Prometheus if metrics from our connector are published. Open Prometheus UI (http://prometheus:9090/graph).
 Run the following query: `{connector="XSTREAMCDC0"}`
 
 We will first check the connect cluster first.
