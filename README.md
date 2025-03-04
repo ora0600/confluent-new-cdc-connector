@@ -285,6 +285,14 @@ where df.tablespace_name = tu.tablespace_name
 # Tablespace                        Used MB    Free MB   Total MB  Pct. Free
 # ------------------------------ ---------- ---------- ---------- ----------
 # SYSAUX                                321         19        340          6
+
+# Check what does the Outbound Server in oracle do
+SQL> connect sys/confluent123@orclcdb as sysdba
+SQL> select component_name, component_type, cumulative_message_count, total_message_count from V$XSTREAM_TRANSACTION where COMPONENT_NAME = 'CONFLUENT_XOUT1' or CUMULATIVE_MESSAGE_COUNT > 0;
+# COMPONENT_NAME      COMPONENT_TYPE     CUMULATIVE_MESSAGE_COUNT TOTAL_MESSAGE_COUNT
+# -------------------- ------------------- -----------------------  -------------------
+# XOUT                 APPLY                2000001                 2000001
+SQL> exit
 ``` 
 
 You see in Connector property setup that I used:
