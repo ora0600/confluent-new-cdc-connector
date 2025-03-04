@@ -210,7 +210,7 @@ curl -s -X GET -H 'Content-Type: application/json' http://localhost:8083/connect
 ```
 Connector is running.
 
-Login into Oracle and check if connector is attached to Outboundserber
+Login into Oracle and check if connector is attached to Outboundserver
 
 ```bash
 ssh -i ~/keys/cmawsdemoxstream.pem ec2-user@PUBIP
@@ -224,8 +224,85 @@ You can check in Confluent Cloud UI all the topics. The `ORCLPDB1.ORDERMGMT.ORDE
 
 Now, you can play around with the connect
 
-* large transaction, sample will coming soon
-* long running transactions, sample will coming soon
+#### large transaction
+
+I try to work now with large transactions. I will insert 1.000.000 regions into the region table with one transaction:
+
+```bash
+ssh -i ~/keys/cmawsdemoxstream.pem ec2-user@X.X.X.X 
+sqlplus sys/confluent123@ORCLPDB1 as sysdba
+SQL> select a.TABLESPACE_NAME, ((a.MAX_SIZE*a.block_Size)/1024/1024/1024) as GB, b.file_name  from dba_tablespaces a, dba_data_files b where a.tablespace_name = 'USERS' and a.tablespace_name = b.tablespace_name;
+SQL> alter tablespace USERS add datafile '/opt/oracle/oradata/ORCLCDB/ORCLPDB1/users02.dbf' size 10G;
+SQL> select a.TABLESPACE_NAME, ((a.MAX_SIZE*a.block_Size)/1024/1024/1024) as GB, b.file_name  from dba_tablespaces a, dba_data_files b where a.tablespace_name = 'USERS' and a.tablespace_name = b.tablespace_name;
+SQL> alter user ordermgmt quota unlimited on USERS;
+SQL> connect ordermgmt/kafka@ORCLPDB1
+# 1 Mio records in one transaction, in parallel one a couple of inserts in table orders
+SQL> begin
+  for x in 1..1000000 LOOP
+    insert into regions (region_id, region_name) values (2000000+x, 'Region '||to_char(x));
+  end loop;
+end;
+/
+SQL> commit;
+```
+
+Monitor V$STREAMS_POOL_STATISTICS.TOTAL_MEMORY_ALLOCATED during large transaction to check change of Memory TOTAL_MEMORY_ALLOCATED. And also check SYSAUX Tablespace usage.
+
+```bash
+ssh -i ~/keys/cmawsdemoxstream.pem ec2-user@X.X.X.X 
+sqlplus sys/confluent123@ORCLPDB1 as sysdba
+-- Memory allocated
+SQL> select TOTAL_MEMORY_ALLOCATED/1024/1024 as TOTAL_MEMORY_ALLOCATEDMB, current_size/1024/1024 as current_sizeMB from  V$STREAMS_POOL_STATISTICS;
+-- SYSAUX Monitor
+SQL> COLUMN OCCUPANT_NAME FORMAT A25
+SQL> Select OCCUPANT_NAME, SPACE_USAGE_KBYTES/1024 as USEDMB from V$SYSAUX_OCCUPANTS order by 1;
+# OCCUPANT_NAME                 USEDMB
+# ------------------------- ----------
+# STATSPACK                          0
+# STREAMS                        .0625
+#
+# See Oracle Notes for Tablespace estimation, see [documention](https://docs.oracle.com/en/database/oracle/oracle-database/21/admin/managing-tablespaces.html#GUID-C0E5C7A8-8220-48DF-B632-E43D4AE4FA1A)
+-- check SYSAUX Tablespace
+SQL> col "Tablespace" for a22
+SQL> col "Used MB" for 99,999,999
+SQL> col "Free MB" for 99,999,999
+SQL> col "Total MB" for 99,999,999
+SQL> select df.tablespace_name "Tablespace",
+       totalusedspace "Used MB",
+       (df.totalspace - tu.totalusedspace) "Free MB",
+       df.totalspace "Total MB",
+       round(100 * ( (df.totalspace - tu.totalusedspace)/ df.totalspace))
+       "Pct. Free"
+  from (select tablespace_name,
+              round(sum(bytes) / 1048576) TotalSpace
+         from dba_data_files group by tablespace_name) df,
+        (select round(sum(bytes)/(1024*1024)) totalusedspace, 
+                tablespace_name
+          from dba_segments group by tablespace_name) tu
+where df.tablespace_name = tu.tablespace_name
+  and tu.tablespace_name = 'SYSAUX'
+;
+# Tablespace                        Used MB    Free MB   Total MB  Pct. Free
+# ------------------------------ ---------- ---------- ---------- ----------
+# SYSAUX                                321         19        340          6
+``` 
+
+You see in Connector property setup that I used:
+- Large Heapsize of `KAFKA_OPTS: "-javaagent:/usr/share/jmx_exporter/jmx_prometheus_javaagent-1.0.1.jar=1234:/usr/share/jmx_exporter/kafka-connect.yml -Xmx12G -Xms512M"` in docker-compose-cdc-cloud_new.yml file.
+- and some connector properties to make snapshot and producer it little bit more faster
+```bash              "snapshot.fetch.size":                                  10000, 
+              "snapshot.max.threads":                                 4,
+              "query.fetch.size":                                     10000,
+              "max.queue.size":                                       65536,
+              "max.batch.size":                                       16384,
+              "producer.override.batch.size":                         204800,
+              "producer.override.linger.ms":                          50,
+              "heartbeat.interval.ms":                                300000,
+```              
+
+
+#### long running transactions 
+sample will coming soon
 
 ### 4. Monitor XStream in Oracle DB
 
