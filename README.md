@@ -308,6 +308,122 @@ You see in Connector property setup that I used:
               "heartbeat.interval.ms":                                300000,
 ```              
 
+Now we have lot of records in our Database REGIONS Tables.
+
+```bash
+sqlplus sys/confluent123@orclcdb as sysdba
+SQL> set lines 200
+COLUMN owner FORMAT A15
+COLUMN OBJECT_NAME FORMAT A25
+COLUMN SUBOBJECT_NAME FORMAT A15
+COLUMN OBJECT_TYPE FORMAT A15
+COLUMN NAME FORMAT A15
+COLUMN bytes HEADING 'Megabytes' FORMAT 9999999
+SELECT o.OWNER , o.OBJECT_NAME , o.SUBOBJECT_NAME , o.OBJECT_TYPE ,
+    t.NAME "Tablespace Name", s.growth/(1024*1024) "Growth in MB",
+    (SELECT sum(bytes)/(1024*1024)
+    FROM dba_segments
+    WHERE segment_name=o.object_name) "Total Size(MB)"
+FROM DBA_OBJECTS o,
+    ( SELECT TS#,OBJ#,
+        SUM(SPACE_USED_DELTA) growth
+    FROM DBA_HIST_SEG_STAT
+    GROUP BY TS#,OBJ#
+    HAVING SUM(SPACE_USED_DELTA) > 0
+    ORDER BY 2 DESC ) s,
+    v$tablespace t
+WHERE s.OBJ# = o.OBJECT_ID
+AND o.OBJECT_TYPE = 'TABLE'
+AND s.TS#=t.TS#
+ORDER BY 6 DESC
+/
+# OUTPUT
+# OWNER           OBJECT_NAME               SUBOBJECT_NAME  OBJECT_TYPE     Tablespace Name              Growth in MB Total Size(MB)
+# --------------- ------------------------- --------------- --------------- ------------------------------ ------------ --------------
+# ORDERMGMT       REGIONS                                   TABLE           USERS                          63.3485899              88
+```
+
+So, we have 63MB of data in REGIONS Table. Let's see how the snaphot will go:
+
+```bash
+SQL> connect c##ggadmin@ORCLCDB
+# Password Confluent12!
+SQL> execute DBMS_XSTREAM_ADM.DROP_OUTBOUND('XOUT');
+SQL> exit;
+
+# Stop Connector and connect
+curl -s -X DELETE -H 'Content-Type: application/json' http://localhost:8083/connectors/XSTREAMCDC0 | jq
+docker-compose -f docker-compose-cdc-ccloud_new.ymldown -v
+# Delete all topics
+#dete all topics to have a clean cluster
+confluent kafka topic delete ORCLPDB1.ORDERMGMT.CONTACTS  --force --cluster CLUSTERID --environment ENVID
+confluent kafka topic delete ORCLPDB1.ORDERMGMT.COUNTRIES  --force --cluster CLUSTERID --environment ENVID
+confluent kafka topic delete ORCLPDB1.ORDERMGMT.CUSTOMERS  --force --cluster CLUSTERID --environment ENVID
+confluent kafka topic delete ORCLPDB1.ORDERMGMT.EMPLOYEES  --force --cluster CLUSTERID --environment ENVID
+confluent kafka topic delete ORCLPDB1.ORDERMGMT.INVENTORIES  --force --cluster CLUSTERID --environment ENVID
+confluent kafka topic delete ORCLPDB1.ORDERMGMT.LOCATIONS  --force --cluster CLUSTERID --environment ENVID
+confluent kafka topic delete ORCLPDB1.ORDERMGMT.NOTES  --force --cluster CLUSTERID --environment ENVID
+confluent kafka topic delete ORCLPDB1.ORDERMGMT.ORDERS  --force --cluster CLUSTERID --environment ENVID
+confluent kafka topic delete ORCLPDB1.ORDERMGMT.ORDER_ITEMS  --force --cluster CLUSTERID --environment ENVID
+confluent kafka topic delete ORCLPDB1.ORDERMGMT.PRODUCTS  --force --cluster CLUSTERID --environment ENVID
+confluent kafka topic delete ORCLPDB1.ORDERMGMT.REGIONS  --force --cluster CLUSTERID --environment ENVID
+confluent kafka topic delete ORCLPDB1.ORDERMGMT.PRODUCT_CATEGORIES  --force --cluster CLUSTERID --environment ENVID
+confluent kafka topic delete ORCLPDB1.ORDERMGMT.WAREHOUSES    --force --cluster CLUSTERID --environment ENVID
+confluent kafka topic delete __cflt-oracle-heartbeat.ORCLPDB1  --force --cluster CLUSTERID --environment ENVID
+confluent kafka topic delete __orcl-schema-changes.cflt  --force --cluster CLUSTERID --environment ENVID
+confluent kafka topic delete _confluent-command  --force --cluster CLUSTERID --environment ENVID
+confluent kafka topic delete connect1-configs  --force --cluster CLUSTERID --environment ENVID
+confluent kafka topic delete connect1-offsets  --force --cluster CLUSTERID --environment ENVID
+confluent kafka topic delete connect1-status   --force --cluster CLUSTERID --environment ENVID
+
+# Start Outbound Server again
+sqlplus c##ggadmin@ORCLCDB
+# Password Confluent12!
+DECLARE
+  tables  DBMS_UTILITY.UNCL_ARRAY;
+  schemas DBMS_UTILITY.UNCL_ARRAY;
+BEGIN
+    tables(1)   := 'ORDERMGMT.ORDERS';
+    tables(2)   := 'ORDERMGMT.ORDER_ITEMS';
+    tables(3)   := 'ORDERMGMT.EMPLOYEES';
+    tables(4)   := 'ORDERMGMT.PRODUCTS';
+    tables(5)   := 'ORDERMGMT.CUSTOMERS';
+    tables(6)   := 'ORDERMGMT.INVENTORIES';
+    tables(7)   := 'ORDERMGMT.PRODUCT_CATEGORIES';
+    tables(8)   := 'ORDERMGMT.CONTACTS';
+    tables(9)   := 'ORDERMGMT.NOTES';
+    tables(10)  := 'ORDERMGMT.WAREHOUSES';
+    tables(11)  := 'ORDERMGMT.LOCATIONS';
+    tables(12)  := 'ORDERMGMT.COUNTRIES';
+    tables(13)  := 'ORDERMGMT.REGIONS';
+    tables(14)  := NULL;
+    schemas(1)  := 'ORDERMGMT';        
+  DBMS_XSTREAM_ADM.CREATE_OUTBOUND(
+    capture_name          =>  'confluent_xout1',
+    server_name           =>  'xout',
+    source_container_name =>  'ORCLPDB1',
+    table_names           =>  tables,
+    schema_names          =>  schemas,
+    comment               => 'Confluent Xstream CDC Connector' );
+-- set rentention
+ 	DBMS_CAPTURE_ADM.ALTER_CAPTURE(
+	  capture_name => 'confluent_xout1',
+	  checkpoint_retention_time => 7
+	);
+END;
+/
+SQL> exit;
+
+# Start connect
+docker-compose -f docker-compose-cdc-ccloud_new.yml up -d
+# Create Connector
+curl -s -X POST -H 'Content-Type: application/json' --data @cdc_ccloud.json http://localhost:8083/connectors | jq
+```
+
+Know the snapshot will work, check grafana snapshot metrics and check REGIONS topic. In Grafana you see great what the Connector in the process of snapshot. The tables were count down, which are remaining so far.
+The snapshot was pretty fast, and took only some few minutes for some millions records in total.
+
+
 
 #### long running transactions 
 sample will coming soon
