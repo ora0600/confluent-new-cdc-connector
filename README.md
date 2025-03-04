@@ -308,7 +308,7 @@ You see in Connector property setup that I used:
               "heartbeat.interval.ms":                                300000,
 ```              
 
-Now we have lot of records in our Database REGIONS Tables.
+Now we have lot of records in our Database REGIONS Tables. The following statement need DB management pack to view the DBA_HIST_SEG_STAT, please keep this in mind.
 
 ```bash
 sqlplus sys/confluent123@orclcdb as sysdba
