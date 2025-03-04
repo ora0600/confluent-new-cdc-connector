@@ -25,7 +25,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 1,
+  "id": 2,
   "links": [],
   "panels": [
     {
@@ -1264,7 +1264,7 @@
               }
             ]
           },
-          "unit": "none"
+          "unit": "bool_yes_no"
         },
         "overrides": []
       },
@@ -2799,13 +2799,13 @@
     ]
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-15m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Confluent Oracle XStream Connector",
   "uid": "Ro1hBYYZz",
-  "version": 4,
+  "version": 2,
   "weekStart": ""
 }
