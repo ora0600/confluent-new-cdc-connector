@@ -152,10 +152,10 @@ BEGIN
     schema_names          =>  schemas,
     comment               => 'Confluent Xstream CDC Connector' );
 -- set rentention
- 	DBMS_CAPTURE_ADM.ALTER_CAPTURE(
-	  capture_name => 'confluent_xout1',
-	  checkpoint_retention_time => 7
-	);
+    DBMS_CAPTURE_ADM.ALTER_CAPTURE(
+      capture_name => 'confluent_xout1',
+      checkpoint_retention_time => 7
+    );
 END;
 /
 # You can drop out OUTBOUND Server by
@@ -441,10 +441,10 @@ BEGIN
     schema_names          =>  schemas,
     comment               => 'Confluent Xstream CDC Connector' );
 -- set rentention
- 	DBMS_CAPTURE_ADM.ALTER_CAPTURE(
-	  capture_name => 'confluent_xout1',
-	  checkpoint_retention_time => 7
-	);
+    DBMS_CAPTURE_ADM.ALTER_CAPTURE(
+      capture_name => 'confluent_xout1',
+      checkpoint_retention_time => 7
+    );
 END;
 /
 SQL> exit;
