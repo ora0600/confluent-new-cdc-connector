@@ -11,6 +11,7 @@ export aws_access_key="YOURAWSKEY"
 export aws_secret_key="YOURAWSSECRET"
 export aws_region="eu-central-1"
 export ssh_key_name="YOUR SSH KEY"
-export ami_oracle19c="ami-YOURORA19C"
+# not needed anymore
+# export ami_oracle19c="ami-YOURORA19C"
 export owner_email="YOUR EMAIL"
 export myip="YOURMYIP/32"
