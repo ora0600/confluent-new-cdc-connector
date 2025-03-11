@@ -1,3 +1,13 @@
+#!/bin/bash
+
+## Internal variables
+pwd > basedir
+export BASEDIR=$(cat basedir)
+echo $BASEDIR
+
+export pubip=$1
+export oracle_host=$1
+
 source .aws_env
 
 # Replace Parameters cdc_ccloud.json.template
