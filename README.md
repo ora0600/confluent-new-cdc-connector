@@ -471,7 +471,7 @@ sqlplus ordermgmt/kafka@XEPDB1
 SQL> execute produce_orders_wo_commit;
 ```
 
-The connector start with ms behind source of -1 to 4530 ms (4 sec). This will increase over time (10 min). JVM Heapsite started at 1.8 GB and ends with 1,91 GB. So, nothing strange, everything in safe water.
+The connector start with ms behind source of -1 to 4530 ms (4 sec). This will increase over time (10 min). JVM Heapsize started at 1.8 GB and ends with 1,91 GB. So, nothing strange, everything in safe water.
 
 ### 4. Monitor XStream in Oracle DB
 
