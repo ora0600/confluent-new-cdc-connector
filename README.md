@@ -681,10 +681,9 @@ terraform apply
 
 Now, we will install in our 23ai DB what we need for produce from Confluent Cloud into Oracle DB.
 The DBMS_KAFKA packages enable you to access and process Kafka data with Oracle SQL access to Kafka (OSAK).
-We want Streaming mode: Use to read sequentially through a Kafka topic
-Then we CREATE_STREAMING_APP: Creates an application that can be used in Streaming mode.
+We want Streaming mode in general: Use to read sequentially through a Kafka topic. But we will build a load app here.
 
-#### Loading Data Into a Streaming Mode Application
+#### Loading Data Into a LOAD Mode Application
 
 To query Kafka data in Streaming mode to read sequentially through a Kafka topic, the procedure is as follows:
 
@@ -698,7 +697,9 @@ To query Kafka data in Streaming mode to read sequentially through a Kafka topic
    e. Use COMMIT to commit the offset tracking information.
 4. When finished with the application, use DBMS_KAFKA.DROP_STREAMING_APP to drop the application.
 
-I followed this sample: https://medium.com/@fifonaci/native-kafka-consumer-in-oracle-database-23ai-3f6680c47534
+A load APP is much easier to implement. Create it, execute it and have a table available.
+
+I followed this [sample](https://medium.com/@fifonaci/native-kafka-consumer-in-oracle-database-23ai-3f6680c47534) and create instead a load app, which need to execute and will then sync the existing events into a table in the DB. Oracle documented the main process [here](https://docs.oracle.com/en/database/oracle/oracle-database/23/sutil/oracle-sql-access-to-kafka.html). We will with mainly with [DBMS_KAFKA_ADM](https://docs.oracle.com/en/database/oracle/oracle-database/23/arpls/DBMS_KAFKA_ADM.html) and [DBMS_KAFKA](https://docs.oracle.com/en/database/oracle/oracle-database/23/arpls/DBMS_KAFKA.html) PL/SQL packages. We are working here with a FRee 23ai database, but please be aware that it is your responsibility to be license compliant with Oracle.
 
 ```bash
 
@@ -751,13 +752,13 @@ SQL> BEGIN
 END;
 /
 
-# register OCI Stream in RDBMS
+# register confluent cloud cluster in RDBMS, replace the broker with correct URL
 SQL> DECLARE
   v_result INTEGER;
 BEGIN
   v_result := DBMS_KAFKA_ADM.REGISTER_CLUSTER(
       cluster_name            => 'CCLOUD1',
-      BOOTSTRAP_SERVERS       => 'pkc-7xoy1.eu-central-1.aws.confluent.cloud:9092', 
+      BOOTSTRAP_SERVERS       => 'broker:9092', 
       kafka_provider          => 'APACHE',
       cluster_access_dir      => 'OSAK_KAFKA_ACCESS', 
       credential_name         => 'KAFKA1CRED',  
@@ -784,7 +785,7 @@ SQL>  execute DBMS_KAFKA_ADM.ENABLE_CLUSTER(cluster_name => 'CCLOUD1');
 # Status 0 is ok, 1=maintenance, > 1 error
 # check cluster connection
 SQL> select dbms_kafka_adm.CHECK_CLUSTER('CCLOUD1');
-######## With simple CP INstallation in Oracleai23 it will also not work. To increase the timeout is not a proven property. Timeout parameter are not supported
+# Create the load APP
 # Create OSAK load application
 SQL> DECLARE
         V_OPTIONS VARCHAR2(512);
@@ -822,7 +823,7 @@ exit
 exit
 ```
 
-Finished demo.
+The demo is finished here. Of course you can play around, and if you have good samples, please add to this repository.
 
 ### 6. Destroy everyting
 
