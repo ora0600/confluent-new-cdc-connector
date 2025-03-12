@@ -457,7 +457,7 @@ docker-compose -f docker-compose-cdc-ccloud_new.yml up -d
 curl -s -X POST -H 'Content-Type: application/json' --data @cdc_ccloud.json http://localhost:8083/connectors | jq
 ```
 
-Know the snapshot will work, check grafana snapshot metrics and check REGIONS topic. In Grafana you see great what the Connector in the process of snapshot. The tables were count down, which are remaining so far.
+The snapshot will work, check grafana snapshot metrics and check REGIONS topic. In Grafana you see great what the Connector in the process of snapshot. The tables were count down, which are remaining so far.
 The snapshot was pretty fast, and took only some few minutes for some millions records in total.
 
 
