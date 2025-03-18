@@ -1,0 +1,17 @@
+# Confluent Cloud 
+export TF_VAR_confluent_cloud_api_key="YOURKEY"
+export TF_VAR_confluent_cloud_api_secret="YOURSECRET"
+export TF_VAR_cloud_provider="AWS"
+export TF_VAR_cc_cloud_region="eu-central-1"
+export TF_VAR_cc_env_name="demo-xstream-cdc"
+export TF_VAR_cc_cluster_name="cc_aws_cluster"
+export TF_VAR_sr_package="ADVANCED"
+# AWS Cloud
+export aws_access_key="YOURAWSKEY"
+export aws_secret_key="YOURAWSSECRET"
+export aws_region="eu-central-1"
+export ssh_key_name="YOUR SSH KEY"
+# not needed anymore
+# export ami_oracle19c="ami-YOURORA19C"
+export owner_email="YOUR EMAIL"
+export myip="YOURMYIP/32"
