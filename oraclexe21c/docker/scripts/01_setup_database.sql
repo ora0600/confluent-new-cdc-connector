@@ -20,8 +20,8 @@ ALTER DATABASE DROP LOGFILE GROUP 3;
 -- alter system set sga_target=42G scope=spfile sid='*';
 -- ALTER SYSTEM SET pga_aggregate_limit=14G SCOPE=BOTH;
 -- XE
-alter system set sga_target=1G scope=spfile sid='*';
-ALTER SYSTEM SET pga_aggregate_limit=1G SCOPE=BOTH;
+alter system set sga_target=2G scope=spfile sid='*';
+ALTER SYSTEM SET pga_aggregate_limit=2048M SCOPE=BOTH;
 -- Enable archive log
 shutdown immediate
 startup mount
