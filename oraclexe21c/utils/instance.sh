@@ -26,14 +26,14 @@ ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
 # install CDC Workshop Setup
 cd /home/ec2-user
 wget ${confluent_cdc_workshop}
-unzip master.zip
-chown ec2-user:ec2-user -R /home/ec2-user/confluent-new-cdc-connector-master/
-rm master.zip
-chown ec2-user:ec2-user -R confluent-cdc-workshop-main/*
-cd /home/ec2-user/confluent-new-cdc-connector-master/oraclexe21c
+unzip main.zip
+chown ec2-user:ec2-user -R /home/ec2-user/confluent-new-cdc-connector-main/
+rm main.zip
+chown ec2-user:ec2-user -R confluent-new-cdc-connector-main/*
+cd /home/ec2-user/confluent-new-cdc-connector-main/oraclexe21c
 mv docker /home/ec2-user/
 cd /home/ec2-user/
-rm -rf confluent-new-cdc-connector-master/
+rm -rf confluent-new-cdc-connector-main/
 
 # run docker compose
 cd docker
