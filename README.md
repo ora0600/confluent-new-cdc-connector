@@ -219,7 +219,6 @@ Before starting the connect cluster, be sure that Docker Desktop is running.
 docker ps
 ```
 
-
 Start the connect cluster: 
 
 ```bash
@@ -281,6 +280,29 @@ curl -s -X GET -H 'Content-Type: application/json' http://localhost:8083/connect
 
 Connector is running.
 
+Excercise:
+* Pause Connector
+* check what is in orders topic: Remember the order_id and offset (in my case: oderid=6649, Offset 6647)
+* resume the connector and check if the missing order_id is complete there shoould not a gap
+* now, simulate an error: Stop the connector. Remember the offset in orders topic (Oder_id=6677, offset=6675)
+* Restart the connector now
+
+
+
+```bash
+# pause connector
+curl -s -X PUT -H 'Content-Type: application/json' http://localhost:8083/connectors/XSTREAMCDC0/pause | jq
+curl -s -X GET -H 'Content-Type: application/json' http://localhost:8083/connectors/XSTREAMCDC0/status | jq
+# resume connector
+curl -s -X PUT -H 'Content-Type: application/json' http://localhost:8083/connectors/XSTREAMCDC0/resume | jq
+curl -s -X GET -H 'Content-Type: application/json' http://localhost:8083/connectors/XSTREAMCDC0/status | jq
+# stop the connector
+curl -s -X PUT -H 'Content-Type: application/json' http://localhost:8083/connectors/XSTREAMCDC0/stop | jq
+curl -s -X GET -H 'Content-Type: application/json' http://localhost:8083/connectors/XSTREAMCDC0/status | jq
+# restart the connector after stop
+curl -s -X PUT -H 'Content-Type: application/json' http://localhost:8083/connectors/XSTREAMCDC0/resume | jq
+curl -s -X GET -H 'Content-Type: application/json' http://localhost:8083/connectors/XSTREAMCDC0/status | jq
+```
 
 Login into Oracle and check if connector is attached to Outboundserver
 
@@ -592,6 +614,7 @@ The connector start with ms behind source of -1 to 4530 ms (4 sec). This will in
 ### 4. Monitor XStream in Oracle DB
 
 You will find some monitor statement in SQL, for checking the Outbound Server status, config and progress
+I also add a sql script what you can run as ggadmin in SQL Developer or SQL Plus to generate a report, see [sql monitor script](xstream_monitor_stats.sql)
 
 ```bash
 ssh -i ~/keys/cmawsdemoxstream.pem ec2-user@PUBIP
@@ -994,5 +1017,3 @@ terraform destroy
 
 Demo is finished and all resources are destroyed. Hope you had fun.
 Thank you for attending.
-
-
