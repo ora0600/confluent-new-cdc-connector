@@ -20,6 +20,8 @@ The demo deployment is based on terraform for the most components (Confluent Clo
 1. [Deploy Confluent Cloud Cluster](#1-deploy-confluent-cloud-cluster)
 2. [Deploy the Oracle Database](#2-deploy-the-oracle-database)
 3. [Deploy the Oracle CDC Connector (XStream)](#3-deploy-the-oracle-cdc-connector-xstream)
+   - [fully-managed connector](#fully-managed-connector)
+   - [self-managed Connector](#self-managed-connector)
    - [large transaction](#large-transaction)
    - [long running transactions](#long-running-transactions)
 4. [Monitor XStream in oracle DB](#4-monitor-xstream-in-oracle-db)   
@@ -211,14 +213,51 @@ We need to continue to be pretty sure, that the following steps are finished.
   - We did change the the Dockerfile and installed Oracle Instant Client and set LD_LIBRARY_PATH in the docker container. That's why in `docker-compose-cdc-ccloud_new.yml` your will see only `build: .` and this mean, that the container will build based on the `Dockerfile`.
 
 > [!IMPORTANT]
-> the handling with the instant client must be fit to your OS and HW setup. I am running Apple M3 HW on MacOs, that's why I download  `https://download.oracle.com/otn_software/linux/instantclient/1926000/instantclient-basic-linux.arm64-19.26.0.0.0dbru.zip` and in DockerFile I use `https://download.oracle.com/otn_software/linux/instantclient/1926000/instantclient-basic-linux.arm64-19.26.0.0.0dbru.zip`. You see the common piece is ARM64 HW here for my setup. For your setup you may need different Zips.
+> the handling with the instant client must be fit your OS and HW setup. I am running Apple M3 HW on MacOs, that's why I download  `https://download.oracle.com/otn_software/linux/instantclient/1926000/instantclient-basic-linux.arm64-19.26.0.0.0dbru.zip` and in DockerFile I use `https://download.oracle.com/otn_software/linux/instantclient/1926000/instantclient-basic-linux.arm64-19.26.0.0.0dbru.zip`. You see the common piece is ARM64 HW here for my setup. For your setup you may need different Zips.
 
+You can run the connector 
+* in Confluent Cloud as fully-managed connector or
+* self-managed on your desktop  with docker.
+
+#### fully-managed connector
+
+Run terraform
+
+if you run with Oracle 19c EE prepared image you need to run with in `cflt_connectors.tf`
+
+```java
+              "database.dbname":                                      "ORCLCDB",
+              "database.service.name":                                "ORCLCDB",
+              "database.pdb.name":                                    "ORCLPDB1",
+              "topic.prefix":                                         "ORCLPDB1",
+```
+
+If you run with Oracle XE 21c you do not need to change the `cflt_connectors.tf`
+
+> [!IMPORTANT]
+> If you run fully-managedc connector then we run with AVRO, so Oracle 23ai sample would not work here.
+
+
+```bash
+cd ../cdc-connector
+source .ccloud_env
+terraform init
+terraform plan
+terraform apply
+```
+
+The fully managed connector should now run in Confluent Cloud.
+
+#### self-managed Connector
 
 Before starting the connect cluster, be sure that Docker Desktop is running.
 
 ```bash
 docker ps
 ```
+
+> [!IMPORTANT]
+> If you run self-managedc connector then we run with JSON with SR, so Oracle 23ai sample would work here.
 
 Start the connect cluster: 
 
@@ -246,7 +285,9 @@ curl localhost:8083/connector-plugins/ | jq
 ```
 
 > [!IMPORTANT]
+> > [!IMPORTANT]
 > Please be informed that this connector is GA since 23 April 2025. You need to use a new property: `Name: database.processor.licenses`. This is a required configuration on CC and optional on CP. Which is not covered here, yet. Please install connector into cdc-connector/confluent-hub-components (or use the fully-managed version)
+
 
 > [!CAUTON]
 > I did setup JSON as schema format without SR. This because I wanted to make the sink into Oracle 23ai simpler. If you need JSON_SR or AVRO or PROTOBUF, please change the config.
@@ -997,12 +1038,22 @@ terraform destroy
 
 Next Stop CDC Connector and shotdown connect cluster.
 
+self-managed:
+
 ```bash
 cd ../cdc-connector
 curl -s -X DELETE -H 'Content-Type: application/json' http://localhost:8083/connectors/XSTREAMCDC0 | jq
 docker-compose -f docker-compose-cdc-ccloud_new.yml down -v
 docker images
 docker rmi <connect image id>
+```
+
+fully-managed:
+
+```bash
+cd ../cdc-connector
+source .ccloud_env
+terraform destroy
 ```
 
 Next the oracle21c instance:
