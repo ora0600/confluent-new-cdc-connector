@@ -211,7 +211,7 @@ We need to continue to be pretty sure, that the following steps are finished.
   - We did change the the Dockerfile and installed Oracle Instant Client and set LD_LIBRARY_PATH in the docker container. That's why in `docker-compose-cdc-ccloud_new.yml` your will see only `build: .` and this mean, that the container will build based on the `Dockerfile`.
 
 > [!IMPORTANT]
-> the handling with the instant client must be fit your OS and HW setup. I am running Apple M3 HW on MacOs, that's why I download  `https://download.oracle.com/otn_software/linux/instantclient/1926000/instantclient-basic-linux.arm64-19.26.0.0.0dbru.zip` and in DockerFile I use `https://download.oracle.com/otn_software/linux/instantclient/1926000/instantclient-basic-linux.arm64-19.26.0.0.0dbru.zip`. You see the common piece is ARM64 HW here for my setup. For your setup you may need different Zips.
+> the handling with the instant client must be fit to your OS and HW setup. I am running Apple M3 HW on MacOs, that's why I download  `https://download.oracle.com/otn_software/linux/instantclient/1926000/instantclient-basic-linux.arm64-19.26.0.0.0dbru.zip` and in DockerFile I use `https://download.oracle.com/otn_software/linux/instantclient/1926000/instantclient-basic-linux.arm64-19.26.0.0.0dbru.zip`. You see the common piece is ARM64 HW here for my setup. For your setup you may need different Zips.
 
 
 Before starting the connect cluster, be sure that Docker Desktop is running.
@@ -246,7 +246,7 @@ curl localhost:8083/connector-plugins/ | jq
 ```
 
 > [!IMPORTANT]
-> Please be informed that with connector GA we will introduce a new property: `Name: database.processor.licenses`. This is a required configuration on CC and optional on CP. Which is not covered here, yet.
+> Please be informed that this connector is GA since 23 April 2025. You need to use a new property: `Name: database.processor.licenses`. This is a required configuration on CC and optional on CP. Which is not covered here, yet. Please install connector into cdc-connector/confluent-hub-components (or use the fully-managed version)
 
 > [!CAUTON]
 > I did setup JSON as schema format without SR. This because I wanted to make the sink into Oracle 23ai simpler. If you need JSON_SR or AVRO or PROTOBUF, please change the config.
