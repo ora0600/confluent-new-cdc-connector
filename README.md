@@ -25,7 +25,8 @@ The demo deployment is based on terraform for the most components (Confluent Clo
 4. [Monitor XStream in oracle DB](#4-monitor-xstream-in-oracle-db)   
 5. [Sink to Oracle 23ai](#5-sink-to-orcle-23ai)
    - [Loading Data Into a Streaming Mode Application](#loading-data-into-a-streaming-mode-application)
-6. [Destroy everyting](#6-destroy-everyting)
+6. [Prod Cases](#6-prod-cases)
+7. [Destroy everyting](#7-destroy-everyting)
 
 
 ## Deploy demo
@@ -613,7 +614,7 @@ The connector start with ms behind source of -1 to 4530 ms (4 sec). This will in
 
 ### 4. Monitor XStream in Oracle DB
 
-You will find some monitor statement in SQL, for checking the Outbound Server status, config and progress
+You will find some monitor statement in SQL, for checking the Outbound Server status, config and progress.
 I also add a sql script what you can run as ggadmin in SQL Developer or SQL Plus to generate a report, see [sql monitor script](xstream_monitor_stats.sql)
 
 ```bash
@@ -978,7 +979,12 @@ exit
 
 The demo is finished here. Of course you can play around, and if you have good samples, please add to this repository.
 
-### 6. Destroy everyting
+### 6. Prod cases
+
+I did prepare some samples around customer questions. This is interesting to know what is happening if something goes down in production. Please see [prod_cases.md](prod_cases.md)
+
+
+### 7. Destroy everyting
 
 
 Oracle 23ai instance
