@@ -6,7 +6,7 @@ As additional hightlight we will replicate the raw data into Oracle DB 23ai with
 ![Demo Architecture](images/Demo_architecture.png)
 
 > [!IMPORTANT]
-> The new Oracle CDC Connector from Confluent based on the Oracle XStream API is not published yet. The GA rollout is coming soon. Please contact your Confluent Account Team if you would like to know more.
+> The new Oracle CDC Connector from Confluent based on the Oracle XStream API is GA. Please install the connector into cdc-connector/confluent-hub-components (or use the fully-managed version).
 
 > [!CAUTION]
 > The workshop was tested with MacBook Pro M3. If you run Apple Mac Silicon processor please [prepare](https://medium.com/@immanoj42/terraform-template-v2-2-0-does-not-have-a-package-available-mac-m1-m2-2b12c6281ea), so that your terraform execution is working fine.
