@@ -16,11 +16,23 @@ export oracle_host=$1
 # Get credentials for Oracle CDC Connector
 source .aws_env
 
+
 # Replace Parameters cdc_ccloud.json.template
 # we need the srrestpoint without https://
 broker="${bootstrap:11}"
 
 cd ../cdc-connector/
+
+# Generate .ccloud_env for Oracle19c CDC XSTREAM CCloud connector setup
+echo "export TF_VAR_confluent_cloud_api_key="\"${confluent_cloud_api_key}\""
+export TF_VAR_confluent_cloud_api_secret="\"${confluent_cloud_api_secret}\""
+export TF_VAR_envid="\"${envid}\""
+export TF_VAR_clusterid="\"${clusterid}\""
+export TF_VAR_said="\"${said}\""
+export TF_VAR_oracle_host="\"${oracle_host}\""" > .ccloud_env
+
+
+
 # make a copy from template
 cp cdc_ccloud.json.template cdc_ccloud.json
 SCRIPT1="sed -i -e 's|##oracle_host##|$oracle_host|g' cdc_ccloud.json;"
@@ -64,5 +76,8 @@ bash -c "$SSCRIPT6"
 bash -c "$SSCRIPT6"
 
 mv docker-compose-cdc-ccloud_new.yml-e docker-compose-cdc-ccloud_new.yml
+
+
+
 
 
