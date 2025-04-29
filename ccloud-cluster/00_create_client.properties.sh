@@ -98,3 +98,4 @@ export srrestpoint="\"${srrestpoint}\""
 export srkey="\"${srkey}\""
 export srsecret="\"${srsecret}\"""> ../oracle23ai/.aws_env
 
+
