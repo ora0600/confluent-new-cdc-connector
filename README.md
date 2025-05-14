@@ -1024,6 +1024,7 @@ The demo is finished here. Of course you can play around, and if you have good s
 
 I did prepare some samples around customer questions. This is interesting to know what is happening if something goes down in production. Please see [prod_cases.md](prod_cases.md)
 
+Offset Management trails are documented [here](management_offset_trails.md).
 
 ### 7. Destroy everyting
 
