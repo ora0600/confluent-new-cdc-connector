@@ -658,6 +658,10 @@ The connector start with ms behind source of -1 to 4530 ms (4 sec). This will in
 You will find some monitor statement in SQL, for checking the Outbound Server status, config and progress.
 I also add a sql script what you can run as ggadmin in SQL Developer or SQL Plus to generate a report, see [sql monitor script](xstream_monitor_stats.sql)
 
+A simple XStream Report can be generate by executing [simple_xstream_report.sql](simple_xstream_report.sql) script as sysbda `sqlplus sys/confluent123@orclcdb as sysdba`. 
+
+Next you will find a collection of queries:
+
 ```bash
 ssh -i ~/keys/cmawsdemoxstream.pem ec2-user@PUBIP
 sudo docker exec -it oracle21c /bin/bash
