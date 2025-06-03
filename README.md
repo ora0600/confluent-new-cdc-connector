@@ -28,7 +28,7 @@ The demo deployment is based on terraform for the most components (Confluent Clo
 5. [Sink to Oracle 23ai](#5-sink-to-orcle-23ai)
    - [Loading Data Into a Streaming Mode Application](#loading-data-into-a-streaming-mode-application)
 6. [Prod Cases](#6-prod-cases)
-7. [add new table[(#7-add-new-table)
+7. [add new table](#7-add-new-table)
 8. [Destroy everyting](#8-destroy-everyting)
 
 
