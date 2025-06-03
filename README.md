@@ -28,7 +28,8 @@ The demo deployment is based on terraform for the most components (Confluent Clo
 5. [Sink to Oracle 23ai](#5-sink-to-orcle-23ai)
    - [Loading Data Into a Streaming Mode Application](#loading-data-into-a-streaming-mode-application)
 6. [Prod Cases](#6-prod-cases)
-7. [Destroy everyting](#7-destroy-everyting)
+7. [add new table[(#7-add-new-table)
+8. [Destroy everyting](#8-destroy-everyting)
 
 
 ## Deploy demo
@@ -1030,7 +1031,135 @@ I did prepare some samples around customer questions. This is interesting to kno
 
 Offset Management trails are documented [here](management_offset_trails.md).
 
-### 7. Destroy everyting
+### 7. Add new table
+
+Create a new table first.
+
+```bash
+SQL> connect ordermgmt/kafka@xepdb1
+SQL> CREATE TABLE cmtest
+( id number(10) NOT NULL,
+  CONSTRAINT cmtest_pk PRIMARY KEY (id)
+);
+SQL> connect c##ggadmin@xe
+SQL> DECLARE
+  tables  DBMS_UTILITY.UNCL_ARRAY;
+  schemas DBMS_UTILITY.UNCL_ARRAY;
+BEGIN
+  tables(1)  := 'ordermgmt.cmtest';
+  schemas(1) := NULL;
+  DBMS_XSTREAM_ADM.ALTER_OUTBOUND(
+    server_name           =>  'xout',
+    source_container_name =>  'XEPDB1',
+    table_names           =>  tables,
+    schema_names          =>  schemas,
+    add                   =>  true);
+END;
+/
+
+SQL> PROMPT ==== Monitoring XStream Rules ====
+COLUMN STREAMS_NAME HEADING 'XStream|Component|Name' FORMAT A15
+COLUMN STREAMS_TYPE HEADING 'XStream|Component|Type' FORMAT A9
+COLUMN RULE_NAME HEADING 'Rule|Name' FORMAT A13
+COLUMN RULE_SET_TYPE HEADING 'Rule Set|Type' FORMAT A8
+COLUMN STREAMS_RULE_TYPE HEADING 'Rule|Level' FORMAT A7
+COLUMN SCHEMA_NAME HEADING 'Schema|Name' FORMAT A10
+COLUMN OBJECT_NAME HEADING 'Object|Name' FORMAT A11
+COLUMN RULE_TYPE HEADING 'Rule|Type' FORMAT A4
+SELECT STREAMS_NAME, 
+       STREAMS_TYPE,
+       RULE_NAME,
+       RULE_SET_TYPE,
+       STREAMS_RULE_TYPE,
+       SCHEMA_NAME,
+       OBJECT_NAME,
+       RULE_TYPE
+  FROM ALL_XSTREAM_RULES;
+# 
+# XOUT            APPLY     CMTEST69      POSITIVE TABLE   ORDERMGMT  CMTEST      DML
+# XOUT            APPLY     CMTEST70      POSITIVE TABLE   ORDERMGMT  CMTEST      DDL
+
+SQL> COLUMN SERVER_NAME FORMAT A15
+COLUMN CAPTURE_NAME FORMAT A15
+COLUMN CONNECT_USER FORMAT A20
+COLUMN SOURCE_DATABASE FORMAT A20
+COLUMN QUEUE_OWNER FORMAT A15
+COLUMN QUEUE_NAME FORMAT A15
+COLUMN PARAMETER FORMAT A40
+COLUMN VALUE FORMAT A40
+COLUMN STATE FORMAT A20
+COLUMN TABLESPACE_NAME FORMAT A20
+COLUMN FILE_NAME FORMAT A50
+COLUMN CREATE_DATE FORMAT A28
+COLUMN START_TIME FORMAT A28
+COLUMN COMMITTED_DATA_ONLY heading "COMMITTED|DATA|ONLY" FORMAT A9
+SELECT SERVER_NAME, 
+       CAPTURE_NAME, 
+       QUEUE_OWNER, 
+       QUEUE_NAME, 
+       CONNECT_USER, 
+       SOURCE_DATABASE,
+       STATUS,
+       CREATE_DATE,
+       COMMITTED_DATA_ONLY,
+       START_SCN,
+       START_TIME
+FROM DBA_XSTREAM_OUTBOUND;
+# SERVER_NAME     CAPTURE_NAME    QUEUE_OWNER     QUEUE_NAME      CONNECT_USER         SOURCE_DATABASE      STATUS   CREATE_DATE                  ONLY       START_SCN START_TIME
+# --------------- --------------- --------------- --------------- -------------------- -------------------- -------- ---------------------------- --------- ---------- ----------------------------
+# XOUT            CONFLUENT_XOUT1 C##GGADMIN      Q$_XOUT_11      C##GGADMIN           XEPDB1               ATTACHED 28-MAY-25 06.55.02.707844 AM YES          2322556 28-MAY-25 06.54.33.000000 AM
+
+SQL> COLUMN CAPTURE_NAME HEADING 'Capture|Process|Name' FORMAT A15
+COLUMN STATE HEADING 'STATE' FORMAT A25
+COLUMN LATENCY_SECONDS HEADING 'Latency|in|Seconds' FORMAT 999999
+COLUMN LAST_STATUS HEADING 'Seconds Since|Last Status' FORMAT 999999
+COLUMN CAPTURE_TIME HEADING 'Current|Process|Time'
+COLUMN CREATE_TIME HEADING 'Message|Creation Time' FORMAT 999999
+COLUMN TOTAL_MESSAGES_CAPTURED HEADING 'Total|captured|Messages' FORMAT 999999
+COLUMN TOTAL_MESSAGES_ENQUEUED HEADING 'MessTotalage|Enqueued|Messages' FORMAT 999999
+SELECT CAPTURE_NAME,
+		STATE,
+       ((SYSDATE - CAPTURE_MESSAGE_CREATE_TIME)*86400) LATENCY_SECONDS,
+       ((SYSDATE - CAPTURE_TIME)*86400) LAST_STATUS,
+       TO_CHAR(CAPTURE_TIME, 'HH24:MI:SS MM/DD/YY') CAPTURE_TIME,       
+       TO_CHAR(CAPTURE_MESSAGE_CREATE_TIME, 'HH24:MI:SS MM/DD/YY') CREATE_TIME,
+       TOTAL_MESSAGES_CAPTURED,
+       TOTAL_MESSAGES_ENQUEUED 
+  FROM gV$XSTREAM_CAPTURE;
+# Capture                                   Latency               Current                                Total MessTotalage
+# Process                                        in Seconds Since Process           Message           captured     Enqueued
+# Name            STATE                     Seconds   Last Status Time              Creation Time     Messages     Messages
+# --------------- ------------------------- ------- ------------- ----------------- ----------------- -------- ------------
+# CONFLUENT_XOUT1 WAITING FOR TRANSACTION        23            23 14:49:59 05/28/25 14:49:59 05/28/25      841           28
+```
+
+Now, change the include table list parameter in parameter and update the connector
+I copied the `cp cdc_ccloud.json cdc_ccloud_update.json` and changed the include list to `"table.include.list": "ORDERMGMT[.](ORDER_ITEMS|ORDERS|EMPLOYEES|PRODUCTS|CUSTOMERS|INVENTORIES|PRODUCT_CATEGORIES|CONTACTS|NOTES|WAREHOUSES|LOCATIONS|COUNTRIES|REGIONS|CMTEST)"`.
+And pause, update and resume the connector
+
+```bash
+# pause
+curl -s -X PUT -H 'Content-Type: application/json' http://localhost:8083/connectors/XSTREAMCDC0/pause | jq
+# update config with new include list
+# Update config
+curl -s -X PUT -H 'Content-Type: application/json' --data @cdc_ccloud_update.json http://localhost:8083/connectors/XSTREAMCDC0/config || jq
+# resume
+curl -s -X PUT -H 'Content-Type: application/json' http://localhost:8083/connectors/XSTREAMCDC0/resume | jq
+# get config
+curl -s -X GET -H 'Content-Type: application/json' http://localhost:8083/connectors/XSTREAMCDC0/config | jq
+```
+
+Insert data into new table:
+
+```bash
+SQL> connect ordermgmt/kafka@XEdb1
+SQL> insert into cmtest values (3);
+commit;
+```
+
+New topic should be created and data is flowing to topic. Adhoc snapshots are not supported, that's why no inital load of that table was happening.
+
+### 8. Destroy everyting
 
 
 Oracle 23ai instance
