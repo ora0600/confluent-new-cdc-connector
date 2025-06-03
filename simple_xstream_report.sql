@@ -23,6 +23,9 @@ COLUMN VALUE FORMAT A40
 COLUMN NAME FORMAT A40
 select name, value from v$parameter where name = 'enable_goldengate_replication' ;
 
+PROMPT ==== Is archive log enabled: ARCHIVELOG ====
+SELECT LOG_MODE FROM V$DATABASE;
+
 PROMPT ==== Monitoring Session Information About XStream Out Components ====
 COLUMN ACTION HEADING 'XStream Component' FORMAT A30
 COLUMN SID HEADING 'Session ID' FORMAT 99999
