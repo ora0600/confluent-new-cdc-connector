@@ -1031,6 +1031,10 @@ I did prepare some samples around customer questions. This is interesting to kno
 
 Offset Management trails are documented [here](management_offset_trails.md).
 
+How to avoid deleting required archive logs? Look [here](avoid_delete_required_archive_logs.md)
+
+What is the general process if capture process is in state: WAITING FOR REDO? Look [here](waiting_for_redo_state.md) 
+
 ### 7. Add new table
 
 Create a new table first.
