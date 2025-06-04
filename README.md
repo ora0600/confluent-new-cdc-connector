@@ -1035,6 +1035,8 @@ How to avoid deleting required archive logs? Look [here](avoid_delete_required_a
 
 What is the general process if capture process is in state: WAITING FOR REDO? Look [here](waiting_for_redo_state.md) 
 
+Monitor adding tables on capture and XStream Config include list, see [here](adding_tables.md)
+
 ### 7. Add new table
 
 Create a new table first.
