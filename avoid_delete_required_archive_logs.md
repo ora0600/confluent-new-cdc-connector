@@ -107,20 +107,3 @@ Data is still flowing without any problem. We do not touch any component.
 
 One other suggestion would be to use RMAN to delete the archived redo log files. RMAN does not delete the archived redo log files if required by the capture process, unless disk space is exhausted, in which case it would delete a required archived redo log file also.
 However, RMAN always ensures that archived redo log files are backed up before it deletes them. If RMAN deletes an archived redo log file that is required by a capture process, then RMAN records this action in the alert log [Ref](https://docs.oracle.com/en/database/oracle/oracle-database/19/xstrm/troubleshooting-xstream-out.html#GUID-4E6239CC-E633-45B9-8081-A1FEB5A64012).
-
-
-
-
-
-
-
-
-
-Capture                                                                                   Required
-Process          Source                Sequence                                           Archived Redo Log
-Name             Database      THREAD#   Number  FIRST_SCN   NEXT_SCN FIRST_TIM NEXT_TIME File Name                                                    MODIFIED_ DIC DIC PUR RESETLOGS_CHANGE# RESET_TIMESTAMP
----------------- ---------- ---------- -------- ---------- ---------- --------- --------- ------------------------------------------------------------ --------- --- --- --- ----------------- ---------------
-OGG$CAP_ORADB19C ORCLPDB1            1        8    2160676    2180306 11-FEB-25 11-FEB-25 /opt/oracle/product/19c/dbhome_1/dbs/arch1_8_1192789111.dbf  11-FEB-25 NO  NO  NO            1920977           1192789111
-OGG$CAP_ORADB19C ORCLPDB1            1        9    2180306    2181564 11-FEB-25 11-FEB-25 /opt/oracle/product/19c/dbhome_1/dbs/arch1_9_1192789111.dbf  11-FEB-25 YES YES NO            1920977           1192789111
-CONFLUENT_XOUT1  ORCLPDB1            1       11    2327830    2327839 04-JUN-25 04-JUN-25 /opt/oracle/product/19c/dbhome_1/dbs/arch1_11_1192789111.dbf 04-JUN-25 NO  NO  NO            1920977           1192789111
-CONFLUENT_XOUT1  ORCLPDB1            1       12    2327839    2328550 04-JUN-25 04-JUN-25 /opt/oracle/product/19c/dbhome_1/dbs/arch1_12_1192789111.dbf 04-JUN-25 YES YES NO            1920977           1192789111
