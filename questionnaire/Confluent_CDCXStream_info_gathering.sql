@@ -95,6 +95,12 @@ SELECT stat_name, TO_CHAR(value) num_cores FROM v$osstat WHERE stat_name = 'NUM_
 -- check the socket
 SELECT stat_name, TO_CHAR(value) num_sockets FROM v$osstat WHERE stat_name = 'NUM_CPU_SOCKETS';
 
+PROMPT ==== Archive Log Mode ====
+SELECT LOG_MODE FROM V$DATABASE; 
+
+Prompt ==== Supplement Logging ====
+SELECT SUPPLEMENTAL_LOG_DATA_MIN, SUPPLEMENTAL_LOG_DATA_ALL FROM V$DATABASE;
+
 PROMPT ==== Long running transactions ====
 column username format a15
 column program format a15
