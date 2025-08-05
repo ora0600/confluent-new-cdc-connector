@@ -27,7 +27,7 @@ resource "aws_security_group" "cmoradb21c_sg" {
 #"${data.aws_ami.ami.id}"
 
 resource "aws_instance" "oracle21c" {
-  ami                    = "${data.aws_ami.ami.id}"
+  ami                    = "ami-0c1b03e30bca3b373" # Amazon Linux 2023 kernel-6.12 AMI
   instance_type          = var.instance_type_resource
   key_name               = var.ssh_key_name
   vpc_security_group_ids = ["${aws_security_group.cmoradb21c_sg.id}"]
