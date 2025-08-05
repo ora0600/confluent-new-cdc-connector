@@ -36,6 +36,8 @@ END;
 /
 ```
 
+If the value for the capture process parameter use_rac_service is set to Y, then each capture process is started and stopped on the owner instance for its ANYDATA queue, even if the start or stop procedure is run on a different instance. Also, a capture process follows its queue to a different instance if the current owner instance becomes unavailable. The queue itself follows the rules for primary instance and secondary instance ownership.
+
 ## What if one instances of the RAC crashed?
 
 Confluent[documentation](https://docs.confluent.io/cloud/current/connectors/cc-oracle-xstream-cdc-source/oracle-xstream-cdc-setup-includes/prereqs-validation.html#capture-changes-from-oracle-rac) says:
