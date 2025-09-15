@@ -5,7 +5,7 @@ We will change SCN, LCR via Offset API call (OR Confluent Cloud UI) and change O
 As we all know the Oracle XStream CDC Connector from Confluent, is a combination of the Xstream solution in Oracle DB and a Connector Client from Confluent. Together this is reliable solution for doing Oracle CDC to Confluent Cluster.
 
 > [!IMPORTANT]
-> It is very important to know, that you can only go back to the point of position of the low-watermark transaction processed by the Xtsream outbound server. You will get this information out of the view [ALL_XSTREAM_OUTBOUND_PROGRESS](https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/ALL_XSTREAM_OUTBOUND_PROGRESS.html). The LCR or SCN position must be higher. Once the LCRs are processed, and you will set the new offset lower then position of the low-watermark transaction processed you will get this error: **ORA-21560: argument last_position is null, invalid, or out of range.** If you have other cases, the offset update will become more complex, then you need to drop and create new outbound server.
+> It is very important to know, that you can only go back to the point of position of the low-watermark transaction processed by the Xtsream outbound server. You will get this information out of the view [ALL_XSTREAM_OUTBOUND_PROGRESS](https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/ALL_XSTREAM_OUTBOUND_PROGRESS.html). The LCR or SCN possition must be higher. Once the LCRs are processed, and you will set the new offset lower then position of the low-watermark transaction processed you will get this error: **ORA-21560: argument last_position is null, invalid, or out of range.** If you have other cases, the offset update will become more complex, then you need to drop and create new outbound server.
 
 Prereqs:
 * Confluent cloud cluster is running
@@ -33,8 +33,8 @@ System change number (SCN) values are very important for a capture process. You 
 
 We do have 4 main SCNs to cover
 
-* **First SCN**: The first SCN is the lowest SCN in the redo log from which a capture process can capture changes. If you specify a first SCN during capture process creation, then the database must be able to access redo log information from the SCN specified and higher.
-* **Start SCN**: The start SCN is the SCN from which a capture process begins to capture changes. You can specify a start SCN that is different than the first SCN during capture process creation, or you can alter a capture process to set its start SCN. The start CN does not need to be modified for normal operation of a capture process.
+* **First SCN**: The first SCN is the lowest SCN in the redo log from which a capture process can capture changes. If you specify a first SCN during capture process creation, then the database must be able to access redo log information from the SCN specified and higher. 
+* **Start SCN**: The start SCN is the SCN from which a capture process begins to capture changes. You can specify a start SCN that is different than the first SCN during capture process creation, or you can alter a capture process to set its start SCN. The start CN does not need to be modified for normal operation of a capture process. If you want to switch the start offset/SCN then you can not be lower then the FIRST_SCN for a running capture process.
 * **Captured SCN**: is the SCN that corresponds to the most recent change scanned in the redo log by a capture process. The applied SCN for a capture process is equivalent to the low-watermark SCN for an apply process that applies changes captured by the capture process.
 * **Applied SCN**: for a capture process is the SCN of the most recent event dequeued by the relevant apply processes. All events lower than this SCN have been dequeued by all apply processes that apply changes captured by the capture process. 
 
@@ -44,40 +44,46 @@ Get all SCN from Capture Process:
 
 ```bash
 sqlplus c##ggadmin@orclcdb
-SQL> COLUMN FIRST_SCN FORMAT 999999999
-COLUMN START_SCN FORMAT 999999999
-COLUMN CAPTURED_SCN FORMAT 999999999
-COLUMN APPLIED_SCN FORMAT 999999999
-COLUMN MAX_CHECKPOINT_SCN FORMAT 999999999
-COLUMN REQUIRED_CHECKPOINT_SCN FORMAT 999999999
-COLUMN LAST_ENQUEUED_SCN FORMAT 999999999
-COLUMN OLDEST_SCN FORMAT 999999999
-COLUMN FILTERED_SCN FORMAT 999999999
-COLUMN CAPTURE_NAME FORMAT A30
-COLUMN QUEUE_NAME FORMAT A30
-COLUMN STATUS FORMAT A10
-COLUMN CLIENT_STATUS FORMAT A15
-SQL> select capture_name, 
-            QUEUE_NAME, 
-            FIRST_SCN,
-            START_SCN, 
-            CAPTURED_SCN, 
-            APPLIED_SCN,  
-            MAX_CHECKPOINT_SCN, 
-            REQUIRED_CHECKPOINT_SCN, 
-            LAST_ENQUEUED_SCN, 
-            OLDEST_SCN, 
-            FILTERED_SCN, 
-            status, 
-            client_status 
+SQL> SET LINES 400
+col CAPTURE_NAME heading '|capture|name' format a15
+col CAPTURE_USER heading '|capture|user' format a15
+col STATUS format a15
+col FIRST_SCN heading '|first|SCN' format 9999999
+col START_SCN heading '|start|SCN' format 9999999
+col CAPTURED_SCN heading '|captured|SCN' format 9999999
+col APPLIED_SCN heading '|applied|SCN' format 999999999999999999
+col MAX_CHECKPOINT_SCN heading 'max|checkpoint|SCN' format 9999999
+col REQUIRED_CHECKPOINT_SCN heading 'required|checkpoint|SCN' format 9999999
+COLUMN LAST_ENQUEUED_SCN heading 'LAST|ENQUEUED|SCN' FORMAT 9999999
+COLUMN OLDEST_SCN heading '|OLDEST|SCN' FORMAT 9999999
+COLUMN FILTERED_SCN heading '|FILTERED|SCN' FORMAT 9999999
+COLUMN QUEUE_NAME heading '|QUEUE|NAME' FORMAT A15
+COLUMN CLIENT_STATUS heading '|CLIENT|STATUS' FORMAT A15
+select capture_name, 
+       QUEUE_NAME, 
+       status, 
+       client_status, 
+       FIRST_SCN,
+       START_SCN, 
+       CAPTURED_SCN, 
+       APPLIED_SCN,  
+       MAX_CHECKPOINT_SCN, 
+       REQUIRED_CHECKPOINT_SCN, 
+       LAST_ENQUEUED_SCN, 
+       OLDEST_SCN, 
+       FILTERED_SCN
       from all_capture where CAPTURE_NAME= 'CONFLUENT_XOUT1';
-# CAPTURE_NAME                   QUEUE_NAME                      FIRST_SCN  START_SCN CAPTURED_SCN APPLIED_SCN MAX_CHECKPOINT_SCN REQUIRED_CHECKPOINT_SCN LAST_ENQUEUED_SCN OLDEST_SCN FILTERED_SCN STATUS     CLIENT_STATUS
-# ------------------------------ ------------------------------ ---------- ---------- ------------ ----------- ------------------ ----------------------- ----------------- ---------- ------------ ---------- ---------------
-# OGG$CAP_ORADB19C               OGG$Q_ORADB19C                    2180306    2180928      2311407     2311341            2310439                 2311341                      2311341      2180928 DISABLED   DETACHED
-# CONFLUENT_XOUT1                Q$_XOUT_11                        2316067    2316067      2368151     2365152            2363856                 2360311                      2324418            0 ENABLED    ATTACHED
+
+#                                                                                                                      max   required     LAST
+#capture         QUEUE                           CLIENT             first    start captured             applied checkpoint checkpoint ENQUEUED   OLDEST FILTERED
+#name            NAME            STATUS          STATUS               SCN      SCN      SCN                 SCN        SCN        SCN      SCN      SCN      SCN
+#--------------- --------------- --------------- --------------- -------- -------- -------- ------------------- ---------- ---------- -------- -------- --------
+#CONFLUENT_XOUT1 Q$_XOUT_1       ENABLED         ATTACHED         3656175  3656175  3708883             3706012    3698041    3693862           3658133        0
+
 ```      
 
-The DBMS_CAPTURE_ADM.BUILD procedure extracts the source database data dictionary to the redo log. When you create a capture process, you can specify a first SCN that corresponds to this data dictionary build in the redo log. Specifically, the first SCN for the capture process being created can be set to any value returned by the following query:
+The DBMS_CAPTURE_ADM.BUILD procedure extracts the source database data dictionary to the redo log. When you create a capture process, you can specify a first SCN that corresponds to this data dictionary build in the redo log. 
+Specifically, the first SCN for the capture process being created can be set to any value returned by the following query:
 
 ```bash
 sqlplus c##ggadmin@orclcdb
@@ -86,23 +92,26 @@ COLUMN NAME HEADING 'Log File Name' FORMAT A50
 SELECT DISTINCT FIRST_CHANGE#, NAME FROM V$ARCHIVED_LOG
   WHERE DICTIONARY_BEGIN = 'YES';
 # First SCN Log File Name
-# ---------- ------------------------------------------------------------
-#    2316067 /opt/oracle/product/19c/dbhome_1/dbs/arch1_12_1192789111.dbf
-#    2180306 /opt/oracle/product/19c/dbhome_1/dbs/arch1_9_1192789111.dbf  
+# ---------- -----------------------------------------------------------
+#    3656175 /opt/oracle/homes/OraDBHome21cXE/dbs/arch1_7_1143830636.dbf
 ```
 
-The value returned for the NAME column is the name of the redo log file that contains the SCN corresponding to the first SCN. This redo log file, and subsequent redo log files, must be available to the capture process. If this query returns multiple distinct values for FIRST_CHANGE#, then the DBMS_CAPTURE_ADM.BUILD procedure has been run more than once on the source database. In this case, choose the first SCN value that is most appropriate for the capture process you are creating.
-In some cases, the DBMS_CAPTURE_ADM.BUILD procedure is run automatically when a capture process is created. When this happens, the first SCN for the capture process corresponds to this data dictionary build.
+As you see our **FIRST_SCN=3656175** are for capture and registered log the same. This is vrey good.
 
-Start SCN Must Be Greater Than or Equal to First SCN. Oracle Corporation recommends that the difference between the first SCN and start SCN be as small as possible during capture process creation to keep the initial capture process startup time to a minimum.
+The value returned for the NAME column is the name of the redo log file that contains the SCN corresponding to the first SCN. This redo log file, and subsequent redo log files, must be available to the capture process. If this query returns multiple distinct values for FIRST_CHANGE#, then the DBMS_CAPTURE_ADM.BUILD procedure has been run more than once on the source database. In this case, choose the first SCN value that is most appropriate for the capture process you are creating.
+In some cases, the `DBMS_CAPTURE_ADM.BUILD` procedure is run automatically when a capture process is created, e.g. with during a `DBMS_XSTREAM_ADM.CREATE_OUTBOUND` call. When this happens, the first SCN for the capture process corresponds to this data dictionary build. We seen situation where this is not happen. I call it invisible error then. Please follow this [guide](https://github.com/ora0600/confluent-new-cdc-connector/blob/main/no_data_in_topic_error_in_tracefile.md) if you see no errors, but no data is synched. In most cases you can fix this with a `DBMS_CAPTURE_ADM.BUILD` call.
+
+Start SCN Must Be Greater Than or Equal to First SCN. Oracle Corporation recommends that the difference between the first_SCN and start_SCN be as small as possible during capture process creation to keep the initial capture process startup time to a minimum.
 
 ## 3. LCR Auditing
 
+this chapter is optional. Only for demo cases.
+
 > [!IMPORTANT]
-> LCR position data is very complex to deal with and could generate lot of errors. The Confluent Connector should always use SCN instead of LCR position.
+> LCR position data is very complex to deal with and could generate lot of errors. The Confluent Connector should always use SCN instead of LCR position for offset management.
 
 
-I did prepare in DB an LCR Position (Logical change record) Auditing demo solution. The last processed LCR Position you will find in a couple of DB Views like [ALL_XSTREAM_OUTBOUND_PROGRESS](https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/ALL_XSTREAM_OUTBOUND_PROGRESS.html). But older LCR positions are not stored. So, an update of the connector offset with a LCR one hour back is not easy to serve because of missing information.
+I did prepare in DB an LCR Position (Logical change record) Auditing demo solution. The last processed LCR Position value can be find in a couple of DB Views like [ALL_XSTREAM_OUTBOUND_PROGRESS](https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/ALL_XSTREAM_OUTBOUND_PROGRESS.html). But older LCR positions are not stored. So, an update of the connector offset with a LCR one hour back is not easy to serve because of missing information.
 The database view `V$XSTREAM_OUTBOUND_SERVER` shows the last processed LCR position too and much more data. I did prepare a simple audit solution, which stores every 5 second the record into my new audit table.
 Please install it in DB under `C##GGADMIN` User the followong audit solution:
 
@@ -254,7 +263,7 @@ The general way to reset offset would be:
 
 ## 4. Use case: Connector maintenance
 
-You can pause the connector via API or UI. We will do with API, this easier to follow.
+You can pause the connector via API or UI. We will do with API, this is easier to follow.
 For this case, we will pause our connector and in parallel transactions are executed in Database.
 
 1. Pause Connector:
@@ -285,12 +294,13 @@ SQL> select PROCESSED_LOW_POSITION,
          to_char(PROCESSED_LOW_TIME,'DD.MM.YYYY HH24:MI:SS') as PROCESSED_LOW_TIME,
          PROCESSED_LOW_SCN
     from ALL_XSTREAM_OUTBOUND_PROGRESS where server_name = 'XOUT';
-# PROCESSED_LOW_POSITION                                                PROCESSED_LOW_TIME  PROCESSED_LOW_SCN
-# --------------------------------------------------------------------- ------------------- -----------------
-# 0000000000242CD800000001000000010000000000242CD7000000010000000102    13.05.2025 10:37:43           2370775
+
+#PROCESSED_LOW_POSITION                                                                                      PROCESSED_LOW_TIME  PROCESSED_LOW_SCN
+#-------------------------------------------------------------------------------------------------------------------------------- -------------------
+#0000000000389E0800000000000000000000000000389E08000000000000000002                                          15.09.2025 12:42:35            3710472
 ```
 
-so the last time data were send to the Confluent Cloud Connector was `13.05.2025 10:37:43`.
+so the last time data were send to the Confluent Cloud Connector was `15.09.2025 12:42:35`.
 
 Insert some records into DB tables sycned with our connector:
 
@@ -301,7 +311,7 @@ SQL> commit;
 SQL> insert into regions (region_name) values ('TEST2');
 SQL> commit;
 SQL> !date
-# Tue May 13 10:40:52 UTC 2025
+# Mon Sep 15 12:50:59 UTC 2025
 
 # and check again the last SCN
 sqlplus c##ggadmin@orclcdb
@@ -309,12 +319,13 @@ SQL> select PROCESSED_LOW_POSITION,
          to_char(PROCESSED_LOW_TIME,'DD.MM.YYYY HH24:MI:SS') as PROCESSED_LOW_TIME,
          PROCESSED_LOW_SCN
     from ALL_XSTREAM_OUTBOUND_PROGRESS where server_name = 'XOUT';
-# PROCESSED_LOW_POSITION                                                                PROCESSED_LOW_TIME  PROCESSED_LOW_SCN
-# ------------------------------------------------------------------------------------- ------------------- -----------------
-# 0000000000242CD800000001000000010000000000242CD7000000010000000102                    13.05.2025 10:37:43            2370775
+#PROCESSED_LOW_POSITION                                                                                      PROCESSED_LOW_TIME  PROCESSED_LOW_SCN
+#-------------------------------------------------------------------------------------------------------------------------------- -------------------
+#0000000000389E0800000000000000000000000000389E08000000000000000002                                          15.09.2025 12:42:35            3710472
 ```
 
-So, the SCN is now **2370775** the time is the same then first query execution. We need to be one higher, so will update **2370776**.
+So, the SCN is now **3710472** the time is the same then first query execution. 
+We need to be one higher, so will update **3710473**.
 Now, the connector maintenance is finished, and we update the the offset and resume the connector via API call.
 
 ```bash
@@ -327,7 +338,7 @@ curl --request POST \
   --url 'https://api.confluent.cloud/connect/v1/environments/env-pwpxp2/clusters/lkc-07zwx5/connectors/OracleXStreamSourceConnector_0/offsets/request' \
   --header 'Authorization: Basic base64' \
   --header 'content-type: application/json' \
-  --data '{"type":"PATCH","offsets":[{"partition":{"server": "ORCLPDB1"},"offset":{"scn": "2370776"}}]}'
+  --data '{"type":"PATCH","offsets":[{"partition":{"server": "ORCLPDB1"},"offset":{"scn": "3710473"}}]}'
 # Resume
 curl --request PUT \
   --url 'https://api.confluent.cloud/connect/v1/environments/env-pwpxp2/clusters/lkc-07zwx5/connectors/OracleXStreamSourceConnector_0/resume' \
@@ -338,7 +349,7 @@ curl --request GET \
   --header 'Authorization: Basic base64' | jq
 ```
 
-Connector is up and running again and did not sync all missing records in my case region_id 5 and 6. Instead throwing this error
+So, the missing data in regions was synched successfully. But it could be that the connector throws an error:
 
 ```bash
 Failure:
@@ -348,28 +359,27 @@ Caused By:
 ORA-21560: argument last_position is null, invalid, or out of range.
 ```
 
-So, remember we changed to SCN `2370776` 
-
+So, remember we changed to SCN `3710473` 
 The current DB SCN situation was as followed:
 
 ```bash
 # CAPTURE SCNs
 # ============
-# CAPTURE_NAME                   QUEUE_NAME                      FIRST_SCN  START_SCN CAPTURED_SCN APPLIED_SCN MAX_CHECKPOINT_SCN REQUIRED_CHECKPOINT_SCN LAST_ENQUEUED_SCN OLDEST_SCN FILTERED_SCN STATUS     CLIENT_STATUS
-# ------------------------------ ------------------------------ ---------- ---------- ------------ ----------- ------------------ ----------------------- ----------------- ---------- ------------ ---------- ---------------
-# OGG$CAP_ORADB19C               OGG$Q_ORADB19C                    2180306    2180928      2311407     2311341            2310439                 2311341                      2311341      2180928 DISABLED   DETACHED
-# CONFLUENT_XOUT1                Q$_XOUT_11                        2316067    2316067      2368151     2365152            2363856                 2360311                      2324418            0 ENABLED    ATTACHED
+#                                                                                                                      max   required     LAST
+#capture         QUEUE                           CLIENT             first    start captured             applied checkpoint checkpoint ENQUEUED   OLDEST FILTERED
+#name            NAME            STATUS          STATUS               SCN      SCN      SCN                 SCN        SCN        SCN      SCN      SCN      SCN
+#--------------- --------------- --------------- --------------- -------- -------- -------- ------------------- ---------- ---------- -------- -------- --------
+#CONFLUENT_XOUT1 Q$_XOUT_1       ENABLED         ATTACHED         3656175  3656175  3708883             3706012    3698041    3693862           3658133        0
+
 # REDOLOG SCNs
 # ============
 # First SCN Log File Name
-# ---------- ------------------------------------------------------------
-#    2316067 /opt/oracle/product/19c/dbhome_1/dbs/arch1_12_1192789111.dbf
-#    2180306 /opt/oracle/product/19c/dbhome_1/dbs/arch1_9_1192789111.dbf  
+# ---------- -----------------------------------------------------------
+#    3656175 /opt/oracle/homes/OraDBHome21cXE/dbs/arch1_7_1143830636.dbf
 ```
 
-First SCN `2316067` is always lower than `2370776`. So, I do not see a problem here.
-If you got such an error, I do to add step by step the SCN. So, I try with `2370777`, and this guy is working now.
-
+First SCN `3656175` is always lower than `3710473`. So, I do not see a problem here.
+If you got such an error, I do to change the scn a bit higher step by step. So, I would try with `3710474`, and this guy is working now.
 With CP the process would look like this:
 
 ```bash
@@ -403,17 +413,17 @@ SQL> select PROCESSED_LOW_POSITION,
          to_char(PROCESSED_LOW_TIME,'DD.MM.YYYY HH24:MI:SS') as PROCESSED_LOW_TIME,
          PROCESSED_LOW_SCN
     from ALL_XSTREAM_OUTBOUND_PROGRESS where server_name = 'XOUT';
-# PROCESSED_LOW_POSITION                                                     PROCESSED_LOW_TIME  PROCESSED_LOW_SCN
-# -------------------------------------------------------------------------- ------------------- -----------------
-# 00000000002450300000000100000001000000000024502F000000010000000102         13.05.2025 11:14:43           2379823
+#PROCESSED_LOW_POSITION                                                                                      PROCESSED_LOW_TIME  PROCESSED_LOW_SCN
+#-------------------------------------------------------------------------------------------------------------------------------- -------------------
+#0000000000389E0800000000000000000000000000389E08000000000000000002                                          15.09.2025 12:42:35            3710472
 ```
 
-We got lowest SCN of `2379823` and I will set offset to `2379824`. We do change the offset and resume.
+We got lowest SCN of `3710472` and I will set offset to `3710473`. We do change the offset and resume.
 
 ```bash
 # Update 
 curl -s -X PATCH -H 'Content-Type: application/json' http://localhost:8083/connectors/XSTREAMCDC0/offsets \
---data '{"offsets":[{"partition":{"server": "ORCLPDB1"},"offset":{"scn": "2379825"}}]}' || jq
+--data '{"offsets":[{"partition":{"server": "ORCLPDB1"},"offset":{"scn": "3710473"}}]}' || jq
 #RESUME
 curl -s -X PUT -H 'Content-Type: application/json' http://localhost:8083/connectors/XSTREAMCDC0/resume | jq
 # Check status
@@ -426,7 +436,7 @@ Same error:
 oracle.streams.StreamsException: ORA-21560: argument last_position is null, invalid, or out of range
 ```
 
-Increase the SCN step-by-step and this will work.
+Increase the SCN step-by-step and then it will work.
 
 ## 5. Use case: DB aborted 45 minutes ago, DBA would like to go back for 1 hour with Connector
 
@@ -440,9 +450,11 @@ SQL> select capture_name,
             max_checkpoint_scn,
             required_checkpoint_scn 
       from dba_capture;
-# CAPTURE_NAME                    START_SCN CAPTURED_SCN APPLIED_SCN MAX_CHECKPOINT_SCN REQUIRED_CHECKPOINT_SCN
-# ------------------------------ ---------- ------------ ----------- ------------------ -----------------------
-# CONFLUENT_XOUT1                   2316067      2415568     2407076            2414444                 2407076
+#                                                             max   required
+#capture            start captured             applied checkpoint checkpoint
+#name                 SCN      SCN                 SCN        SCN        SCN
+#--------------- -------- -------- ------------------- ---------- ----------
+#CONFLUENT_XOUT1  3656175  3715046             3706012    3705056    3706012
 SQL> select consumer_name,
        name, 
        FIRST_SCN,
