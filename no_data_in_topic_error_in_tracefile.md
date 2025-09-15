@@ -103,8 +103,12 @@ BEGIN
     value        => '256');
 END;
 /
-# Now,  Resume Connector
+# Now, wait some time and then Resume Connector
+# And now, insert some data as ordermgmt/kafka@XEPDB1
+insert into regions (region_name) values ('TEST3');
+commit;
 ```
+In general there should be no issue. A create_bound calls always a build of dictionary. Anyway, 
 
 The result was, no data were synch to Confluent Cloud Cluster, and I also do not any errors.
 So, I did a deep search, were could be the problem.
