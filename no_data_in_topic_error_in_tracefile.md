@@ -1,5 +1,16 @@
 # Getting no data in topics, no errors visible
 
+What I did in DB and connector
+* Create Outbound Server in DB
+* Stop Confluent XStream CDC connector 
+* Drop Outbound Server in DB
+* Create a new Outbound Server in DB
+* Resume Confluent XStream CDC connector
+
+The result was, no data were synch to Confluent Cloud Cluster, and I also do not any errors.
+So, I did a deep search, were could be the problem.
+
+
 Track Trace files: Trace Files are here: /opt/oracle/diag/rdbms/xe/XE/trace/
 The [Oracle backgroundprocesses](https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/background-processes.html) are documented and show the meaning of the shortcut: 
 
