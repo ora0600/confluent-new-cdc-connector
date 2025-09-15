@@ -108,11 +108,15 @@ END;
 insert into regions (region_name) values ('TEST3');
 commit;
 ```
-In general there should be no issue. A create_bound calls always a build of dictionary. Anyway, 
+In general there should be no issue. A `create_outbound` will call always a build for a new dictionary sync. 
+Anyway, 
+if you have a result, that no data were synched to Confluent Cloud Cluster, and I also you do not see any errors. Then - I call it - you have an invisible error.
 
-The result was, no data were synch to Confluent Cloud Cluster, and I also do not any errors.
-So, I did a deep search, were could be the problem.
+> [!TIP]
+> And it is time to call your DBA.
 
+I did a deep search, and you should do as well together with your DBA.
+Were could be the problem?
 
 Track Trace files: Trace Files are here: /opt/oracle/diag/rdbms/xe/XE/trace/
 The [Oracle backgroundprocesses](https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/background-processes.html) are documented and show the meaning of the shortcut: 
@@ -137,9 +141,9 @@ ls -ltr XE_cp*.trc
 ls -ltr XE_cx*.trc
 ```
 
-I found an Error: `more XE_cx00_2365.trc` "**Missing Streams multi-version data dictionary**". I followed instructions in trace file
+I found an Error: in Trace File for Propagration process `more XE_cx00_2365.trc` "**Missing Streams multi-version data dictionary**". I followed instructions in trace file
 
-Check missing Object:
+Check missing Object: In the tracefile you will see `objid`
 
 ```sql
 select owner, object_name from dba_objects  where object_id = '3703627';
@@ -154,8 +158,7 @@ select u.name owner, o.name from system.logmnr_obj$ o, user$ u
 So, nothing found.
 
 Check again in alert log `cat /opt/oracle/diag/rdbms/xe/XE/trace/alert_XE.log | grep XE_cx00_2365.trc`. Nothing found in Alert.log.
-
-CHeck now: Streams Apply Process Fails With ORA-26687 or "Missing Streams multi-version data dictionary" (Doc ID 223000.1)
+Check now Oracle Support Knowledge Base: Streams Apply Process Fails With ORA-26687 or "Missing Streams multi-version data dictionary" (Doc ID 223000.1)
 
 Check the propagazation statistics:
 
@@ -245,7 +248,7 @@ SQL> select count(*) from ordermgmt.orders;
 5365
 ```
 
-Check not message Tracking:
+Check `message Tracking View` :
 
 ```bash
 SQL> connect sys/confluent123@XE as SYSDBA
@@ -308,14 +311,15 @@ from V$XSTREAM_MESSAGE_TRACKING;
 8 rows selected.
 ```
 
-We see that we have a problem: Mulit-Version Data dictionary is missing.
-The Big question is **How to fox this?**
+We see that we have a problem: Multi-Version Data dictionary is missing aka **Missing MVDD:1  Missing MVDD:1 ** Output.
+The Big question is **How to fix this?**
 
+**Oracle**:
+`Missing Streams Multi-Version Data Dictionary (Doc ID 729692.1)`: This is caused by the Apply related process reusing the same parallel query processes which had been used by the previous incarnation of the Apply process
 
-Oracle:
-Missing Streams Multi-Version Data Dictionary (Doc ID 729692.1): This is caused by the Apply related process reusing the same parallel query processes which had been used by the previous incarnation of the Apply process
+`Resolving the MISSING Streams Multi-version Data Dictionary Error (Doc ID 212044.1)`: The error "MISSING Streams multi-version data dictionary!!!" occurs when the Streams data dictionary information for the specified object is not available in the database. This message is generated at an apply site in the apply reader trace file (P000). This is an informational message. When the "Missing ...data dictionary information" message occurs, the LCR is not applied. The apply process does not disable or abort when the multi-version data dictionary information is unavailable.
 
-Resolving the MISSING Streams Multi-version Data Dictionary Error (Doc ID 212044.1): The error "MISSING Streams multi-version data dictionary!!!" occurs when the Streams data dictionary information for the specified object is not available in the database. This message is generated at an apply site in the apply reader trace file (P000). This is an informational message. When the "Missing ...data dictionary information" message occurs, the LCR is not applied. The apply process does not disable or abort when the multi-version data dictionary information is unavailable.
+So, is the build dictionary not executed in create_outbound call?
 
 # Next trail: Did I forgot to build the DD before re-creating?
 
@@ -325,7 +329,6 @@ Build Data dictionary
 Re-create the outbound:
 
 ```bash
-
 SQL> sys/confluent123@XE as sysdba
 SQL> exec dbms_xstream_adm.drop_outbound('XOUT');
 # Connector failed automatically
@@ -382,5 +385,5 @@ Connector restart failed: **The outbound server 'XOUT' is not valid. Please chec
 
 Restart again, maybe I was to fast with Connector Restart. Now, it is running.
 
-And yes, this was reason. Before creating a new outbound, create the DD.
+And yes, this was reason. Before creating a new outbound, you could run `DBMS_CAPTURE_ADM.BUILD` to build a dictionary.
 
