@@ -7,6 +7,105 @@ What I did in DB and connector
 * Create a new Outbound Server in DB
 * Resume Confluent XStream CDC connector
 
+Here is what I did:
+
+```bash
+#create outbound as c##ggadmin
+DECLARE
+  tables  DBMS_UTILITY.UNCL_ARRAY;
+  schemas DBMS_UTILITY.UNCL_ARRAY;
+BEGIN
+    tables(1)   := 'ORDERMGMT.ORDERS';
+    tables(2)   := 'ORDERMGMT.ORDER_ITEMS';
+    tables(3)   := 'ORDERMGMT.EMPLOYEES';
+    tables(4)   := 'ORDERMGMT.PRODUCTS';
+    tables(5)   := 'ORDERMGMT.CUSTOMERS';
+    tables(6)   := 'ORDERMGMT.INVENTORIES';
+    tables(7)   := 'ORDERMGMT.PRODUCT_CATEGORIES';
+    tables(8)   := 'ORDERMGMT.CONTACTS';
+    tables(9)   := 'ORDERMGMT.NOTES';
+    tables(10)  := 'ORDERMGMT.WAREHOUSES';
+    tables(11)  := 'ORDERMGMT.LOCATIONS';
+    tables(12)  := 'ORDERMGMT.COUNTRIES';
+    tables(13)  := 'ORDERMGMT.REGIONS';
+    tables(14)  := NULL;
+    schemas(1)  := 'ORDERMGMT';        
+  DBMS_XSTREAM_ADM.CREATE_OUTBOUND(
+    capture_name          =>  'confluent_xout1',
+    server_name           =>  'xout',
+    source_container_name =>  'XEPDB1',   
+    table_names           =>  tables,
+    schema_names          =>  schemas,
+    comment               => 'Confluent Xstream CDC Connector' );
+    -- set retention
+    DBMS_CAPTURE_ADM.ALTER_CAPTURE(
+      capture_name => 'confluent_xout1',
+      checkpoint_retention_time => 1);
+    -- STREAM POOL SIZE should be 1024, in XE 256, Capture
+    DBMS_XSTREAM_ADM.SET_PARAMETER(
+    streams_type => 'capture',
+    streams_name => 'confluent_xout1',
+    parameter    => 'max_sga_size',
+    value        => '256');
+    -- STREAM POOL SIZE should be 1024, in XE 256, Outbound
+    DBMS_XSTREAM_ADM.SET_PARAMETER(
+    streams_type => 'apply',
+    streams_name => 'xout',
+    parameter    => 'max_sga_size',
+    value        => '256');
+END;
+/
+# Stopped the connector
+# Dropped the Outbound server
+execute DBMS_XSTREAM_ADM.DROP_OUTBOUND('xout');
+# Re-Create a new Outbound Server
+DECLARE
+  tables  DBMS_UTILITY.UNCL_ARRAY;
+  schemas DBMS_UTILITY.UNCL_ARRAY;
+BEGIN
+    tables(1)   := 'ORDERMGMT.ORDERS';
+    tables(2)   := 'ORDERMGMT.ORDER_ITEMS';
+    tables(3)   := 'ORDERMGMT.EMPLOYEES';
+    tables(4)   := 'ORDERMGMT.PRODUCTS';
+    tables(5)   := 'ORDERMGMT.CUSTOMERS';
+    tables(6)   := 'ORDERMGMT.INVENTORIES';
+    tables(7)   := 'ORDERMGMT.PRODUCT_CATEGORIES';
+    tables(8)   := 'ORDERMGMT.CONTACTS';
+    tables(9)   := 'ORDERMGMT.NOTES';
+    tables(10)  := 'ORDERMGMT.WAREHOUSES';
+    tables(11)  := 'ORDERMGMT.LOCATIONS';
+    tables(12)  := 'ORDERMGMT.COUNTRIES';
+    tables(13)  := 'ORDERMGMT.REGIONS';
+    tables(14)  := NULL;
+    schemas(1)  := 'ORDERMGMT';        
+  DBMS_XSTREAM_ADM.CREATE_OUTBOUND(
+    capture_name          =>  'confluent_xout1',
+    server_name           =>  'xout',
+    source_container_name =>  'XEPDB1',   
+    table_names           =>  tables,
+    schema_names          =>  schemas,
+    comment               => 'Confluent Xstream CDC Connector' );
+    -- set retention
+    DBMS_CAPTURE_ADM.ALTER_CAPTURE(
+      capture_name => 'confluent_xout1',
+      checkpoint_retention_time => 1);
+    -- STREAM POOL SIZE should be 1024, in XE 256, Capture
+    DBMS_XSTREAM_ADM.SET_PARAMETER(
+    streams_type => 'capture',
+    streams_name => 'confluent_xout1',
+    parameter    => 'max_sga_size',
+    value        => '256');
+    -- STREAM POOL SIZE should be 1024, in XE 256, Outbound
+    DBMS_XSTREAM_ADM.SET_PARAMETER(
+    streams_type => 'apply',
+    streams_name => 'xout',
+    parameter    => 'max_sga_size',
+    value        => '256');
+END;
+/
+# Now,  Resume Connector
+```
+
 The result was, no data were synch to Confluent Cloud Cluster, and I also do not any errors.
 So, I did a deep search, were could be the problem.
 
