@@ -325,7 +325,7 @@ SQL> select PROCESSED_LOW_POSITION,
 ```
 
 So, the SCN is now **3710472** the time is the same then first query execution. 
-We need to be one higher, so will update **3710473**.
+We need to be one higher, so will update the connector offset to **3710473**.
 Now, the connector maintenance is finished, and we update the the offset and resume the connector via API call.
 
 ```bash
@@ -378,9 +378,10 @@ The current DB SCN situation was as followed:
 #    3656175 /opt/oracle/homes/OraDBHome21cXE/dbs/arch1_7_1143830636.dbf
 ```
 
-First SCN `3656175` is always lower than `3710473`. So, I do not see a problem here.
-If you got such an error, I do to change the scn a bit higher step by step. So, I would try with `3710474`, and this guy is working now.
-With CP the process would look like this:
+First SCN `3656175` is always lower than `3710473`. So, Everything looks fine.
+But, if you got such an error, I do change the scn a bit higher step by step. So, I would try next with `3710474`.
+
+### With CP the process would look like this:
 
 ```bash
 # start connect
@@ -430,13 +431,48 @@ curl -s -X PUT -H 'Content-Type: application/json' http://localhost:8083/connect
 curl -s -X GET -H 'Content-Type: application/json' http://localhost:8083/connectors/XSTREAMCDC0/status | jq
 ```
 
-Same error:
+If you will get this error:
 
 ```bash
 oracle.streams.StreamsException: ORA-21560: argument last_position is null, invalid, or out of range
 ```
 
 Increase the SCN step-by-step and then it will work.
+
+### How to force connector to read from specified SCN?
+
+So, we did synched missing data after last connector stop. And the offset of connector was higher then processes low position.
+Remember:
+
+```bash
+select PROCESSED_LOW_POSITION,
+         to_char(PROCESSED_LOW_TIME,'DD.MM.YYYY HH24:MI:SS') as PROCESSED_LOW_TIME,
+         PROCESSED_LOW_SCN
+    from ALL_XSTREAM_OUTBOUND_PROGRESS where server_name = 'XOUT';
+#PROCESSED_LOW_POSITION                                                                                      PROCESSED_LOW_TIME  PROCESSED_LOW_SCN
+#-------------------------------------------------------------------------------------------------------------------------------- -------------------
+#0000000000389E0800000000000000000000000000389E08000000000000000002                                          15.09.2025 12:42:35            3710472
+```
+
+We set offset to **3710473**, so it was higher.
+What if would like to set offset lower then this, so we try **3710460** instead.
+
+* Stop/Pause Connector
+* add some new regions 
+* set the new offset 
+* Resume Connector
+* see what is happening 
+
+Unfortunately we got the following errors in connector:
+
+```bash
+oracle.streams.StreamsException: ORA-21560: argument last_position is null, invalid, or out of range
+# and 
+org.apache.kafka.connect.errors.ConnectException: An exception occurred in the change event producer. This connector will be stopped.
+```
+
+To get the connnector working again, try to set an offset higher then processed low position SCN.
+
 
 ## 5. Use case: DB aborted 45 minutes ago, DBA would like to go back for 1 hour with Connector
 
