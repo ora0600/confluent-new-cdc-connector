@@ -249,7 +249,7 @@ if you run with Oracle 19c EE prepared image you need to run with in `cflt_conne
               "topic.prefix":                                         "ORCLPDB1",
 ```
 
-if your Oracle 26ai 
+if you use Oracle 26ai 
 
 ```java
               "database.dbname":                                      "FREE",
@@ -258,11 +258,10 @@ if your Oracle 26ai
               "topic.prefix":                                         "FREEPDB1",
 ```
 
-
 If you run with Oracle XE 21c you do not need to change the `cflt_connectors.tf`
 
 > [!IMPORTANT]
-> If you run fully-managedc connector then we run with AVRO, so Oracle 23ai sample would not work here.
+> If you run fully-managed connector then we run with AVRO, so Oracle 23ai sample would not work here.
 
 
 ```bash
