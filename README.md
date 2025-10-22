@@ -95,6 +95,9 @@ Confluent Cloud should be created. The Output shows what was created.
 
 I prepared two databases, each are not charged for use. XE Edition in 21c version and the FREE Developer latest Edition in version 26ai. Both are not Enterprise Edition but you can test the funcitonality of the Confluent Oracle XStream CDC Source connector without an Oracle license
 
+> [!TIP]
+> Please use with 21c XE edition **XE** for CDB and *XEPDB1** for PDB service names. And for 26ai FREE Edition you will use **FREE** for CDB and **FREEPDB1** for PDB access. 
+
 Oracle 21c XE (or 26ai then you need to switch to dir:`cd ../oraclexe21c/`) build during runtime:
 run terraform:
 
@@ -140,8 +143,10 @@ SELECT a.group#,b.member,a.members, a.bytes/1024/1024 as MB, a.status FROM v$log
 #   GROUP#  MEMBER                            MEMBERS  MB       STATUS
 # -------- --------------------------------- --------- -------  ------
 #        1 /opt/oracle/oradata/XE/redo01.log 1         200      INACTIVE
-# Drop old REDO         
+#   op old REDO, if they still exists         
 ALTER DATABASE DROP LOGFILE GROUP 1; 
+ALTER DATABASE DROP LOGFILE GROUP 2;
+ALTER DATABASE DROP LOGFILE GROUP 3; 
 # We need only these REDOS
 #   GROUP#  MEMBER                            MEMBERS  MB       STATUS
 # -------- --------------------------------- --------- -------  ------
