@@ -26,9 +26,9 @@ ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
 # install CDC Workshop Setup
 cd /home/ec2-user
 wget ${confluent_cdc_workshop}
-unzip main.zip
+unzip master.zip
 chown ec2-user:ec2-user -R /home/ec2-user/confluent-new-cdc-connector-main/
-rm main.zip
+rm master.zip
 chown ec2-user:ec2-user -R confluent-new-cdc-connector-main/*
 cd /home/ec2-user/confluent-new-cdc-connector-main/oracle26ai
 mv docker /home/ec2-user/
