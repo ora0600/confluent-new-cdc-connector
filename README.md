@@ -143,7 +143,7 @@ SELECT a.group#,b.member,a.members, a.bytes/1024/1024 as MB, a.status FROM v$log
 #   GROUP#  MEMBER                            MEMBERS  MB       STATUS
 # -------- --------------------------------- --------- -------  ------
 #        1 /opt/oracle/oradata/XE/redo01.log 1         200      INACTIVE
-#   op old REDO, if they still exists         
+#   drop old REDO, if they still exists         
 ALTER DATABASE DROP LOGFILE GROUP 1; 
 ALTER DATABASE DROP LOGFILE GROUP 2;
 ALTER DATABASE DROP LOGFILE GROUP 3; 
@@ -248,6 +248,16 @@ if you run with Oracle 19c EE prepared image you need to run with in `cflt_conne
               "database.pdb.name":                                    "ORCLPDB1",
               "topic.prefix":                                         "ORCLPDB1",
 ```
+
+if your Oracle 26ai 
+
+```java
+              "database.dbname":                                      "FREE",
+              "database.service.name":                                "FREE",
+              "database.pdb.name":                                    "FREEPDB1",
+              "topic.prefix":                                         "FREEPDB1",
+```
+
 
 If you run with Oracle XE 21c you do not need to change the `cflt_connectors.tf`
 
