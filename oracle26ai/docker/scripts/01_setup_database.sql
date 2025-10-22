@@ -16,9 +16,9 @@ alter system switch logfile;
 alter system switch logfile;
 alter system switch logfile;
 -- disable old
-alter system archive log group 1;
-alter system archive log group 2;
-alter system archive log group 3;
+--alter system archive log group 1;
+--alter system archive log group 2;
+--alter system archive log group 3;
 -- drop old
 execute sys. dbms_lock. sleep(60);
 ALTER DATABASE DROP LOGFILE GROUP 1; 
