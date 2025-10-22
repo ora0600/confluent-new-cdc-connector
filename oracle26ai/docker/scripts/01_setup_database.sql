@@ -30,8 +30,8 @@ COLUMN MEMBER FORMAT A40
 COLUMN MEMBERS FORMAT 999
 SELECT a.group#,b.member,a.members, a.bytes/1024/1024 as MB, a.status FROM v$log a,v$logfile b WHERE a.group# = b.group#;
 -- change SGA and PGA, for FREE
-alter system set sga_target=2G scope=spfile sid='*';
-ALTER SYSTEM SET pga_aggregate_limit=2G SCOPE=BOTH;
+--alter system set sga_target=1G scope=spfile sid='*';
+--ALTER SYSTEM SET pga_aggregate_limit=2G SCOPE=BOTH;
 -- Enable archive log
 shutdown immediate
 startup mount
