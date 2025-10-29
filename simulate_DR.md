@@ -137,3 +137,5 @@ SQL> commit;
 ```
 
 Result: Simulation worked as expected. To bring this into a better view, DB DR Setup must be implemented correctly with Dataguard and Services. 
+
+How to add an outbound server to standby and make is restartable automatically during switch role, check [here](https://github.com/ora0600/confluent-new-cdc-connector/blob/main/add_outbound_to_standby.md)
