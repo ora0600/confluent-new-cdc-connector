@@ -1,7 +1,7 @@
 # Transfer only inserts from Oracle to Confluent Cloud
 
 Customers asking if it is possible to transfer only inserts? Yes, it is.
-If you have this scenario, you will think that it would make sense to create topics with more than one partition. Unfortunately all INSERT will be transfered to only one partition, although we have 2 partitions in our topic.
+If you have this scenario, you will think that it would make sense to create topics with more than one partition. This correct thinking. You can have more partitions now, because you do need an orderning anymore.
 
 This demo will also show, that not supported datatypes are automatically dropped e.g. an XMLTYPE data type.
 
@@ -30,9 +30,8 @@ No data is added so far. We wait later for inserts. Let's start the Outbound Ser
 
 ```bash
 SQL> connect c##ggadmin@XE
-Password is Confluent12!
-# execute The CREATE_OUTBOUND procedure in the DBMS_XSTREAM_ADM package is used to create a capture process, queue, and outbound server in a single database
-# Depended on your table.include.list in connector setup you would like to add alle tables here: In my case I do have 13 tables, you can use an arry like I do, or a comma sperated list
+# Password is Confluent12!
+
 SQL> DECLARE
   tables  DBMS_UTILITY.UNCL_ARRAY;
   schemas DBMS_UTILITY.UNCL_ARRAY;
@@ -67,7 +66,7 @@ END;
 /
 ```
 
-Now, we create a new topic `XEPDB1.ORDERMGMT.INSERTSONLY` with 2 partitions.
+Now, we create a new topic `XEPDB1.ORDERMGMT.INSERTSONLY` with 3 partitions.
 
 Now, start the connector for getting only inserts, before doing that we changed the config of `cflt_connectors.tf` and skipping operations, changed snapshot and the include tables.
 
@@ -90,15 +89,7 @@ SQL> commit;
 SQL> INSERT INTO INSERTSONLY(ID) values (2);
 SQL> commit;
 SQL> begin
-      for x in 1001..1010 loop
-        insert into insertsonly(id) values (x);
-        commit; 
-      end loop;
-    end;
-    /
-# In another terminal with under the same user with new connection
-SQL> begin
-      for x in 1011..1020 loop
+      for x in 3..1000 loop
         insert into insertsonly(id) values (x);
         commit; 
       end loop;
@@ -110,6 +101,7 @@ In Confluent Cloud Topic Viewer we will see that the column XMLTYPE was dropped 
 
 ![Inserts only ](images/insertsonly.png)
 
-No others records then INSERTS are transformed. Unfortunately all the data was inserted into partition 1, partition 0 has no data.
+No others records then INSERTS are transformed. The data in splitted into partitions
 
-![Inserts only ](images/partition0.png)
+![Inserts only splitted ](images/partition_split.png)
+
