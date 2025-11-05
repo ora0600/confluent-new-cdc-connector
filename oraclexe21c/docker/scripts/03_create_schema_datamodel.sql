@@ -184,5 +184,10 @@ CREATE TABLE notes
     CONSTRAINT pk_notes 
       PRIMARY KEY( note_id)
   );  
-
+-- connector signal table
+CREATE TABLE ordermgmt.cflt_signals (
+  id VARCHAR(42) PRIMARY KEY,
+  type VARCHAR(32) NOT NULL,
+  data VARCHAR(2048)
+);
 exit;
