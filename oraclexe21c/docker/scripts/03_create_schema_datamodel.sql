@@ -190,4 +190,18 @@ CREATE TABLE ordermgmt.cflt_signals (
   type VARCHAR(32) NOT NULL,
   data VARCHAR(2048)
 );
+
+-- New Table
+CREATE TABLE ordermgmt.cmtest1 (
+  id INTEGER GENERATED ALWAYS AS IDENTITY,
+  CMTEXT VARCHAR(50),
+  CREATED_DATE DATE
+);
+CREATE TABLE ordermgmt.cmtest2 (
+  id INTEGER GENERATED ALWAYS AS IDENTITY,
+  CMTEXT VARCHAR(50),
+  CREATED_DATE DATE
+);
+
 exit;
+
