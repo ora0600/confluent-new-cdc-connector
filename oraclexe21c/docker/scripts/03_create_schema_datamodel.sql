@@ -203,5 +203,16 @@ CREATE TABLE ordermgmt.cmtest2 (
   CREATED_DATE DATE
 );
 
+-- UUID
+create or replace function random_uuid return RAW is
+  v_uuid RAW(16);
+begin
+  v_uuid := sys.dbms_crypto.randombytes(16);
+  return (utl_raw.overlay(utl_raw.bit_or(utl_raw.bit_and(utl_raw.substr(v_uuid, 7, 1), '0F'), '40'), v_uuid, 7));
+end random_uuid;
+/
+
+
 exit;
+
 
