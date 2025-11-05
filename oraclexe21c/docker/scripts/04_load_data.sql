@@ -3055,4 +3055,27 @@ ALTER TABLE order_items ENABLE CONSTRAINT fk_order_items_orders;
 ALTER TABLE inventories ENABLE CONSTRAINT fk_inventories_products;
 ALTER TABLE inventories ENABLE CONSTRAINT fk_inventories_warehouses;
 
+-- LOAD Content to test Tables
+DECLARE
+  cmtext VARCHAR2(50):= NULL;
+BEGIN
+   FOR X in 1..10000 LOOP
+      cmtext := 'CMTEXT'||TO_CHAR(x);
+      INSERT INTO CMTEST1 (CMTEXT,CREATED_DATE) VALUES (cmtext,sysdate);
+   END LOOP;
+   commit;
+END;
+/
+
+DECLARE
+  cmtext VARCHAR2(50):= NULL;
+BEGIN
+   FOR X in 1..10000 LOOP
+      cmtext := 'CMTEXT'||TO_CHAR(x);
+      INSERT INTO CMTEST2 (CMTEXT,CREATED_DATE) VALUES (cmtext,sysdate);
+   END LOOP;
+   commit;
+END;
+/
+
 exit;
