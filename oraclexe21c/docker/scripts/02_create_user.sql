@@ -12,8 +12,10 @@ Create user ordermgmt identified by kafka;
 grant RESOURCE to ordermgmt;
 grant create session to ordermgmt;
 grant execute on DBMS_LOCK to ordermgmt;
+grant execute on sys.dbms_crypto to ORDERMGMT;
 
 -- give right to write data to tablespace
 alter user ordermgmt quota 50m on USERS;
 
 exit;
+
