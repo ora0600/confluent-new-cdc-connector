@@ -1,7 +1,7 @@
 # Transfer only inserts from Oracle to Confluent Cloud
 
 Customers asking if it is possible to transfer only inserts? Yes, it is.
-If you have this scenario, you will think that it would make sense to create topics with more than one partition. This correct thinking. You can have more partitions now, because you do need an orderning anymore.
+If you have this scenario, you will think that it would make sense to create topics with more than one partition. This correct thinking. You can have more partitions now, because you do not need an ordering anymore.
 
 This demo will also show, that not supported datatypes are automatically dropped e.g. an XMLTYPE data type.
 
@@ -23,7 +23,7 @@ No, we will add a new table into the database for INSERTS only cased:
 
 ```bash
 SQL> connect ordermgmt/kafka@XEPDB1 
-SQL> CREATE TABLE INSERTSONLY (id NUMBER(10,0), TEXTXML XMLTYPE);
+SQL> CREATE TABLE INSERTSONLY (id NUMBER(10,0) PRIMARY KEY, TEXTXML XMLTYPE);
 ```
 
 No data is added so far. We wait later for inserts. Let's start the Outbound Server
@@ -66,7 +66,7 @@ END;
 /
 ```
 
-Now, we create a new topic `XEPDB1.ORDERMGMT.INSERTSONLY` with 3 partitions.
+Now, we create a new topic `XEPDB1.ORDERMGMT.INSERTSONLY` with 2 partitions.
 
 Now, start the connector for getting only inserts, before doing that we changed the config of `cflt_connectors.tf` and skipping operations, changed snapshot and the include tables.
 
@@ -83,13 +83,19 @@ And do insert and updates etc.
 SQL> connect ordermgmt/kafka@XEPDB1 
 SQL> INSERT INTO INSERTSONLY(ID) values (1);
 SQL> commit;
-SQL> SELECT * FROM INSERTSONLY;
-SQL> UPDATE INSERTSONLY set ID=2;
-SQL> commit;
 SQL> INSERT INTO INSERTSONLY(ID) values (2);
 SQL> commit;
+SQL> INSERT INTO INSERTSONLY(ID) values (3);
+SQL> commit;
+SQL> SELECT * FROM INSERTSONLY;
+SQL> UPDATE INSERTSONLY set ID=4 where ID=1;
+SQL> commit;
+# Now we will have two IDs=1 in topic, so you need to pretty sure, that you have only inserts
+SQL> INSERT INTO INSERTSONLY(ID) values (1);
+SQL> commit;
+SQL> delete from INSERTSONLY where ID=2;
 SQL> begin
-      for x in 3..1000 loop
+      for x in 5..1000 loop
         insert into insertsonly(id) values (x);
         commit; 
       end loop;
@@ -104,4 +110,5 @@ In Confluent Cloud Topic Viewer we will see that the column XMLTYPE was dropped 
 No others records then INSERTS are transformed. The data in splitted into partitions
 
 ![Inserts only splitted ](images/partition_split.png)
+
 
