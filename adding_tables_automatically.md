@@ -180,5 +180,5 @@ Again we see
 - We have 3 records in topic and each has a different schema id
 
 > [!IMPORTANT]
-> Do not change the Primary Key. In Oracle this change would work. But this change can not synched with Confluent.
+> Do not change the Primary Key or Unique Key or not null values. In Oracle this change would work. But this change can not synched with Confluent.
 
