@@ -16,7 +16,7 @@ In General connectors are enabled at Table Level. To add tables you would follow
 
 The main playbook would be:
 
-1. Have signal table enabled (if you need ad-hoc snapshot, if not then snapshit_mode=no_data without signal)
+1. Have signal table enabled (if you need ad-hoc snapshot, if not then snapshot_mode=no_data without signal)
 2. Add table to outbound: DBMS_XSTREAM_ADM.ALTER_OUTBOUND
 3. Check if rule is added correctly, query ALL_XSTREAM_RULES, and maybe check also capture|outbound status
 4. Change connector config add table to table.include.list, in CCloud UI, Edit and Apply changes
@@ -93,6 +93,7 @@ terraform apply -auto-approve
 ```
 
 Connector will be deployed successfully and listen to the outbound server for all tables in Schema ORDERMGMT.
+Check in Confluent Cloud Cluster UI
 
 3. Check-List
 
@@ -198,10 +199,28 @@ SQL> desc CMNEWTABLE
  LAST_MODIFIED                                      DATE
 ```
 
-In Oracle this worked pretty well. In Kafka we see the DDL in the schema history. But nothing more. And the Connector failed.
+In Oracle this worked pretty well. In Kafka we see the DDL in the schema history. But nothing more. And the Connector failed afterwards.
 
 > [!CAUTION]
 > The connector has failed to register a new schema with Schema Registry because it is incompatible with an existing schema for the same subject. Please update Schema Registry compatibility settings globally or for the topic to ensure that it works with the data that the connector is reading.
 
-A Restart would not work. You need somehow fix the problem. The point here is, think first before you doing something at a DDL level. It would be better maybe to change the Schema Evolution first: Compatibility mode = FORWARD. 
+A Restart would not work. You need somehow fix the problem. The point here is, think first before you doing something at a DDL level. It would be better maybe to change the Schema Evolution first: Compatibility mode = FORWARD.
+
+How you could change the table and still have no breaks in Kafka. Thank you for the hint from my colleague David.
+Before you alter column you can just set Compatibility mode = NONE in Table topic data contract.
+
+These are the steps if you did fail as mentioned before:
+
+```bash
+alter non-option column causing fail
+set  Compatibility mode = NONE
+restart connector
+check table topic 
+can see new schema registered and messages that failed are automatically re-processed 
+set back to  Compatibility mode = FORWARD
+continue as normal
+```
+
+It is a bit risky changing to  Compatibility mode = NONE  but the only way I can get it back into a stable state and automatically process failed messages.
+
 
