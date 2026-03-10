@@ -1,15 +1,17 @@
 # Adding new Tables to connector automatically
 
 We have two options to run the connector:
-1. Table level, all tables are explicite mentioned in connector and outbound server
-2. Schema Level, every data table in the schema will be syncded with CDC Connector, without system tables and what you mentioned in the connector excluse table list.
+1. Table level, all tables are explicite mentioned in connector and outbound server, here you do have an automated setup.
+2. Schema Level, every data table in the schema will be synced with CDC Connector, without system tables and without what you mentioned in the connector exclude table list.
 
-Only Option 2. can be implemented in that way, that new tables will be added automatically in the future.
+Only Option 2 can be implemented in that way, that new tables will be added automatically in the future.
 
 > [!IMPORTANT]
 > We do later DDL changes. Oracle XStream Outbound 21c has [restrictions](https://docs.oracle.com/en/database/oracle/oracle-database/21/xstrm/xstream-out-restrictions.html#GUID-28827DFA-D78F-49AC-9724-9A496B78B695) with DDL. 
 
 ## Table Level
+
+Table Level setup is not automated. For better Security we recommend table level setup, because here you explicit implement what should be synched with CDC.
 In General connectors are enabled at Table Level. To add tables you would follow [this guide](https://github.com/ora0600/confluent-new-cdc-connector/blob/main/adhoc-snapshot.md#2-use-case-add-tables-in-existing-outbound-server-and-do-ad-hoc-snapshots).
 
 The main playbook would be:
@@ -25,6 +27,7 @@ Done. Table was added, and initial data was loaded
 ## Schema Level
 
 CDC Connector synched a complete schema, maybe not all tables (use exclude table list here, and no system tables).
+This setup will add tables automatically in the future.
 
 Pre-requs:
 * Confluent Cloud Cluster is running
@@ -37,13 +40,7 @@ ssh -i ~/keys/cmawsdemoxstream.pem ec2-user@<IP_ADDRESS>
 # Wait till you see ...Cloud-init v. 22.2.2 finished at Mon....
 sudo tail -f /var/log/cloud-init-output.log
 sudo docker exec -it oracle21c /bin/bash
-sqlplus sys/confluent123@XE as sysdba
-SQL> set lines 200
-COLUMN MEMBER FORMAT A40
-COLUMN MEMBERS FORMAT 999
-SELECT a.group#,b.member,a.members, a.bytes/1024/1024 as MB, a.status FROM v$log a,v$logfile b WHERE a.group# = b.group#;
-# now configure Xstream
-SQL> connect c##ggadmin@XE
+sqlplus c##ggadmin@XE
 Password is Confluent12!
 # execute The CREATE_OUTBOUND procedure in the DBMS_XSTREAM_ADM package is used to create a capture process, queue, and outbound server in a single database
 # Depended on your table.include.list in connector setup you would like to add alle tables here: In my case I do have 13 tables, you can use an arry like I do, or a comma sperated list
@@ -94,6 +91,8 @@ cd cdc-connector/
 source .ccloud_env
 terraform apply -auto-approve
 ```
+
+Connector will be deployed successfully and listen to the outbound server for all tables in Schema ORDERMGMT.
 
 3. Check-List
 
@@ -148,7 +147,7 @@ SQL> CREATE TABLE SAMPLE_DAIL_LOG
    );
 ```
 
-Also this statement worked. So, I do not have a good sample. If you have one, please let me know.
+Also this statement worked. So, I do not have a good sample. If you have one which could not be parsed by the connector, please let me know.
 
 5. Change Table columns
 
@@ -180,5 +179,29 @@ Again we see
 - We have 3 records in topic and each has a different schema id
 
 > [!IMPORTANT]
-> Do not change the Primary Key or Unique Key or not null values. In Oracle this change would work. But this change can not synched with Confluent.
+> I tested with AVRO. Do not change the Primary Key or Unique Key or not null columns. In Oracle this change would work. But this change can not synched with Kafka cluster via CDC Connector. So, please be aware what you will change on a CDC-synched table. An not supported change can bring the system into an unstable state.
+
+See following example:
+Let's try a PK column rename:
+
+```bash
+SQL> connect ordermgmt/kafka@XEPDB1 
+SQL> ALTER TABLE CMNEWTABLE RENAME COLUMN NUMMER to NR;
+SQL> DESC CMNEWTABLE
+SQL> insert into CMNEWTABLE values (4,'TEXT4', sysdate);
+SQL> commit;
+SQL> desc CMNEWTABLE
+ Name                                      Null?    Type
+ ----------------------------------------- -------- ----------------------------
+ NR                                        NOT NULL NUMBER
+ NR_TEXT                                            VARCHAR2(50)
+ LAST_MODIFIED                                      DATE
+```
+
+In Oracle this worked pretty well. In Kafka we see the DDL in the schema history. But nothing more. And the Connector failed.
+
+> [!CAUTION]
+> The connector has failed to register a new schema with Schema Registry because it is incompatible with an existing schema for the same subject. Please update Schema Registry compatibility settings globally or for the topic to ensure that it works with the data that the connector is reading.
+
+A Restart would not work. You need somehow fix the problem. The point here is, think first before you doing something at a DDL level. It would be better maybe to change the Schema Evolution first: Compatibility mode = FORWARD. 
 
