@@ -1,6 +1,6 @@
 # Adding tables
 
-To add tables to and existing process starts in the DB. See [here](https://github.com/ora0600/confluent-new-cdc-connector/blob/main/README.md#7-add-new-table).
+To add tables to and existing process starts in the DB. See [here](https://docs.confluent.io/kafka-connectors/oracle-xstream-cdc-source/current/examples.html#add-tables-to-the-capture-set).
 
 In one customer situation we had a couple of tables added to the capture process but the connector did only have one table.
 To not wasting resources you could double check:
